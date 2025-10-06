@@ -11,6 +11,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> featuredProducts = [];
+  bool isLoading = true;
 
   final List<Map<String, dynamic>> categories = [
     {'name': 'Sneakers', 'icon': Icons.directions_run},
@@ -25,10 +26,31 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadProducts();
   }
 
-  void _loadProducts() {
+  void _loadProducts() async {
+    setState(() => isLoading = true);
+    await Future.delayed(const Duration(milliseconds: 500)); // Small delay for smooth loading
     setState(() {
       featuredProducts = ProductRepository().getProducts();
+      isLoading = false;
     });
+  }
+
+  void _addToCart(Map<String, dynamic> product) async {
+    await ProductRepository().addToCart(product);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${product['name']} added to cart!'),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 2),
+        action: SnackBarAction(
+          label: 'View Cart',
+          textColor: Colors.white,
+          onPressed: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const CartScreen()));
+          },
+        ),
+      ),
+    );
   }
 
   @override
@@ -49,9 +71,11 @@ class _HomeScreenState extends State<HomeScreen> {
               child: const Icon(Icons.directions_run, color: Colors.white, size: 18),
             ),
             const SizedBox(width: 8),
-            const Text('StepUp', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+            const Text('StepUp', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.black)),
           ],
         ),
+        backgroundColor: const Color(0xFFF8F9FA),
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_none, color: Colors.black87),
@@ -65,151 +89,169 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Hero Section
-              Container(
-                height: 160,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Colors.black, Colors.grey],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Stack(
-                  children: [
-                    Positioned(
-                      left: 20,
-                      top: 20,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            'New',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            'Step into\nStyle',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
+      body: RefreshIndicator(
+        onRefresh: () async => _loadProducts(),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Hero Section
+                Container(
+                  height: 160,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Colors.black, Colors.grey],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    Positioned(
-                      right: 20,
-                      top: 20,
-                      child: Container(
-                        width: 100,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        left: 20,
+                        top: 20,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text(
+                              'New',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'Step into\nStyle',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
                         ),
-                        child: const Icon(Icons.directions_run, color: Colors.white, size: 40),
                       ),
+                      Positioned(
+                        right: 20,
+                        top: 20,
+                        child: Container(
+                          width: 100,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.directions_run, color: Colors.white, size: 40),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Categories
+                const Text(
+                  'Categories',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 80,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: categories.length,
+                    itemBuilder: (context, index) {
+                      final category = categories[index];
+                      return Container(
+                        width: 80,
+                        margin: const EdgeInsets.only(right: 12),
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 60,
+                              height: 60,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: const Color(0xFFE5E7EB)),
+                              ),
+                              child: Icon(
+                                category['icon'],
+                                color: Colors.black87,
+                                size: 28,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              category['name'],
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Featured Products
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Featured Products',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
+                    ),
+                    TextButton(
+                      onPressed: _loadProducts,
+                      child: const Text('Refresh', style: TextStyle(color: Colors.black54)),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 24),
-
-              // Categories
-              const Text(
-                'Categories',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 80,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: categories.length,
-                  itemBuilder: (context, index) {
-                    final category = categories[index];
-                    return Container(
-                      width: 80,
-                      margin: const EdgeInsets.only(right: 12),
-                      child: Column(
-                        children: [
-                          Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: const Color(0xFFE5E7EB)),
+                const SizedBox(height: 12),
+                
+                isLoading
+                    ? const Center(child: CircularProgressIndicator(color: Colors.black))
+                    : featuredProducts.isEmpty
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(40),
+                              child: Column(
+                                children: [
+                                  Icon(Icons.inventory_2_outlined, size: 80, color: Colors.grey[400]),
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    'No products available',
+                                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'Admin can add products from admin panel',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(fontSize: 14, color: Colors.black54),
+                                  ),
+                                ],
+                              ),
                             ),
-                            child: Icon(
-                              category['icon'],
-                              color: Colors.black87,
-                              size: 28,
+                          )
+                        : SizedBox(
+                            height: 300,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: featuredProducts.length,
+                              itemBuilder: (context, index) {
+                                final product = featuredProducts[index];
+                                return _buildProductCard(product);
+                              },
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            category['name'],
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Featured Products
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Featured Products',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  TextButton(
-                    onPressed: () => _loadProducts(),
-                    child: const Text('Refresh', style: TextStyle(color: Colors.black54)),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              featuredProducts.isEmpty
-                  ? const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(40),
-                        child: Text(
-                          'No products available.\nAdmin can add products.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 16, color: Colors.black54),
-                        ),
-                      ),
-                    )
-                  : SizedBox(
-                      height: 280,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: featuredProducts.length,
-                        itemBuilder: (context, index) {
-                          final product = featuredProducts[index];
-                          return _buildProductCard(product);
-                        },
-                      ),
-                    ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -217,14 +259,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildProductCard(Map<String, dynamic> product) {
-    // Ensure all required fields exist with defaults
-    final String name = product['name'] ?? 'Unknown Product';
-    final String brand = product['brand'] ?? 'Unknown Brand';
-    final int price = product['price'] ?? 0;
-    final int? originalPrice = product['originalPrice'];
+    // Safe field access with null checks and defaults
+    final String name = product['name']?.toString() ?? 'Unknown Product';
+    final String brand = product['brand']?.toString() ?? 'Unknown Brand';
+    final int price = (product['price'] is int) ? product['price'] : ((product['price'] is double) ? product['price'].toInt() : 0);
+    final int? originalPrice = product['originalPrice'] != null ? 
+        ((product['originalPrice'] is int) ? product['originalPrice'] : ((product['originalPrice'] is double) ? product['originalPrice'].toInt() : null)) 
+        : null;
     final double rating = (product['rating'] ?? 0.0).toDouble();
-    final int reviews = product['reviews'] ?? 0;
-    final int productId = product['id'] ?? 0;
+    final int reviews = (product['reviews'] ?? 0).toInt();
+    final int productId = (product['id'] ?? DateTime.now().millisecondsSinceEpoch).toInt();
 
     return Container(
       width: 180,
@@ -332,7 +376,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           '\$$price',
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                         ),
-                        if (originalPrice != null)
+                        if (originalPrice != null && originalPrice > price)
                           Text(
                             '\$$originalPrice',
                             style: TextStyle(
@@ -344,19 +388,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                     GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => ProductScreen(product: product)),
-                        );
-                      },
+                      onTap: () => _addToCart(product),
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: const BoxDecoration(
                           color: Colors.black,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.add, color: Colors.white, size: 16),
+                        child: const Icon(Icons.add_shopping_cart, color: Colors.white, size: 16),
                       ),
                     ),
                   ],
