@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'loginscreen.dart';
-import 'main_navigation.dart';
+import 'auth_service.dart';
 
 class Signup extends StatefulWidget {
   const Signup({super.key});
@@ -15,19 +15,44 @@ class _SignupState extends State<Signup> {
   final passwordController = TextEditingController();
   bool _loading = false;
   bool _agreedToTerms = false;
+  String _errorMessage = '';
 
   void _handleSignup() async {
     if (!_formKey.currentState!.validate()) return;
-    if (!_agreedToTerms) return;
+    if (!_agreedToTerms) {
+      setState(() => _errorMessage = 'Please agree to Terms and Privacy Policy');
+      return;
+    }
 
-    setState(() => _loading = true);
-    await Future.delayed(const Duration(seconds: 1));
+    setState(() {
+      _loading = true;
+      _errorMessage = '';
+    });
+
+    final success = await AuthService.signup(
+      name: nameController.text.trim(),
+      email: emailController.text.trim(),
+      password: passwordController.text,
+    );
+
     setState(() => _loading = false);
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const MainNavigation()),
-    );
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Account created successfully! Please sign in.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+    } else {
+      setState(() {
+        _errorMessage = 'Email already registered or signup failed';
+      });
+    }
   }
 
   @override
@@ -72,7 +97,7 @@ class _SignupState extends State<Signup> {
                   ),
                   const SizedBox(height: 32),
                   const Text(
-                    'Sign Up',
+                    'Create Account',
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 32,
@@ -81,7 +106,7 @@ class _SignupState extends State<Signup> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Create your account to get started',
+                    'Join StepUp community today',
                     style: TextStyle(
                       color: Color(0xFF7C7C7C),
                       fontSize: 16,
@@ -209,6 +234,7 @@ class _SignupState extends State<Signup> {
                         onChanged: (val) {
                           setState(() {
                             _agreedToTerms = val ?? false;
+                            if (_agreedToTerms) _errorMessage = '';
                           });
                         },
                         activeColor: Colors.black,
@@ -228,12 +254,18 @@ class _SignupState extends State<Signup> {
                     ],
                   ),
                   
-                  if (!_agreedToTerms)
-                    const Padding(
-                      padding: EdgeInsets.only(left: 16, bottom: 16),
+                  if (_errorMessage.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.red[50],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.red[200]!),
+                      ),
                       child: Text(
-                        'You must agree to Terms and Privacy Policy',
-                        style: TextStyle(color: Colors.red, fontSize: 13),
+                        _errorMessage,
+                        style: TextStyle(color: Colors.red[700], fontSize: 14),
                       ),
                     ),
                   
@@ -244,7 +276,7 @@ class _SignupState extends State<Signup> {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: (_loading || !_agreedToTerms) ? null : _handleSignup,
+                      onPressed: _loading ? null : _handleSignup,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.black,
                         foregroundColor: Colors.white,

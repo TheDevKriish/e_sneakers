@@ -3,6 +3,7 @@ import 'signup.dart';
 import 'forgots_password.dart';
 import 'main_navigation.dart';
 import 'admin_dashboard.dart';
+import 'auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -25,21 +26,29 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = '';
     });
 
-    // Simulate loading
-    await Future.delayed(const Duration(seconds: 1));
+    final user = await AuthService.login(
+      email: emailController.text.trim(),
+      password: passwordController.text,
+    );
 
     setState(() => _loading = false);
 
-    if (emailController.text.trim().endsWith('@admin.com')) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const AdminDashboard()),
-      );
+    if (user != null) {
+      if (user['isAdmin'] == true) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminDashboard()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainNavigation()),
+        );
+      }
     } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MainNavigation()),
-      );
+      setState(() {
+        _errorMessage = 'Invalid email or password';
+      });
     }
   }
 
@@ -85,7 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 40),
                   const Text(
-                    'Login',
+                    'Welcome Back',
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 32,
@@ -94,7 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Welcome back! Sign in to continue',
+                    'Sign in to your account',
                     style: TextStyle(
                       color: Color(0xFF7C7C7C),
                       fontSize: 16,
@@ -171,20 +180,23 @@ class _LoginScreenState extends State<LoginScreen> {
                       if (value == null || value.isEmpty) {
                         return 'Password is required';
                       }
-                      if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
-                      }
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
                   
                   if (_errorMessage.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.red[50],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.red[200]!),
+                      ),
                       child: Text(
                         _errorMessage,
-                        style: const TextStyle(color: Colors.red, fontSize: 14),
+                        style: TextStyle(color: Colors.red[700], fontSize: 14),
                       ),
                     ),
                   
@@ -253,7 +265,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           );
                         },
                         child: Text(
-                          'Sign up',
+                          'Create Account',
                           style: TextStyle(
                             color: accentColor,
                             fontWeight: FontWeight.w600,
