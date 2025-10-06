@@ -14,6 +14,7 @@ class _SignupState extends State<Signup> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   bool _loading = false;
+  bool _showPassword = false;
   bool _agreedToTerms = false;
   String _errorMessage = '';
 
@@ -71,7 +72,6 @@ class _SignupState extends State<Signup> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 20),
-                  // Logo and title
                   Row(
                     children: [
                       Container(
@@ -114,7 +114,6 @@ class _SignupState extends State<Signup> {
                   ),
                   const SizedBox(height: 32),
                   
-                  // Name field
                   const Text('Full Name',
                       style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
                   const SizedBox(height: 8),
@@ -148,7 +147,6 @@ class _SignupState extends State<Signup> {
                   ),
                   const SizedBox(height: 20),
                   
-                  // Email field
                   const Text('Email Address',
                       style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
                   const SizedBox(height: 8),
@@ -186,16 +184,22 @@ class _SignupState extends State<Signup> {
                   ),
                   const SizedBox(height: 20),
                   
-                  // Password field
                   const Text('Password',
                       style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: passwordController,
+                    obscureText: !_showPassword,
                     decoration: InputDecoration(
                       hintText: 'Create a password',
                       prefixIcon: const Icon(Icons.lock_outline, color: Colors.black54),
-                      suffixIcon: const Icon(Icons.visibility_off_outlined, color: Colors.black54),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _showPassword ? Icons.visibility_off : Icons.visibility,
+                          color: Colors.black54,
+                        ),
+                        onPressed: () => setState(() => _showPassword = !_showPassword),
+                      ),
                       filled: true,
                       fillColor: Colors.white,
                       contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
@@ -212,7 +216,6 @@ class _SignupState extends State<Signup> {
                         borderSide: const BorderSide(color: Colors.black),
                       ),
                     ),
-                    obscureText: true,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Password is required';
@@ -225,7 +228,6 @@ class _SignupState extends State<Signup> {
                   ),
                   const SizedBox(height: 20),
                   
-                  // Terms checkbox
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -271,7 +273,6 @@ class _SignupState extends State<Signup> {
                   
                   const SizedBox(height: 32),
                   
-                  // Signup button
                   SizedBox(
                     width: double.infinity,
                     height: 50,
@@ -305,7 +306,6 @@ class _SignupState extends State<Signup> {
                   ),
                   const SizedBox(height: 24),
                   
-                  // Login link
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [

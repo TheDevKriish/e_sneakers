@@ -14,21 +14,31 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _go();
+    _navigate();
   }
 
-  Future<void> _go() async {
-    await Future.delayed(const Duration(seconds: 1));
+  Future<void> _navigate() async {
+    await Future.delayed(const Duration(seconds: 2));
     final user = await AuthService.getCurrentUser();
     if (!mounted) return;
+    
     if (user != null) {
       if (user['isAdmin'] == true) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AdminDashboard()));
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminDashboard()),
+        );
       } else {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainNavigation()));
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainNavigation()),
+        );
       }
     } else {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
     }
   }
 
@@ -40,11 +50,29 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: const [
-            Icon(Icons.directions_run, size: 72, color: Colors.black),
-            SizedBox(height: 18),
-            Text('StepUp', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
-            SizedBox(height: 10),
-            CircularProgressIndicator(color: Colors.black)
+            Icon(Icons.directions_run, size: 80, color: Colors.black),
+            SizedBox(height: 20),
+            Text(
+              'StepUp',
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Sneaker Store',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.black54,
+              ),
+            ),
+            SizedBox(height: 40),
+            CircularProgressIndicator(
+              color: Colors.black,
+              strokeWidth: 2,
+            ),
           ],
         ),
       ),

@@ -5,7 +5,6 @@ class AuthService {
   static const _kUsers = 'registered_users';
   static const _kCurrentUser = 'current_user';
 
-  // Register new user
   static Future<bool> signup({
     required String name,
     required String email,
@@ -16,12 +15,10 @@ class AuthService {
       final usersData = prefs.getString(_kUsers) ?? '[]';
       final List<dynamic> users = jsonDecode(usersData);
       
-      // Check if email already exists
       if (users.any((user) => user['email'] == email)) {
-        return false; // Email already registered
+        return false;
       }
       
-      // Add new user
       users.add({
         'name': name,
         'email': email,
@@ -37,7 +34,6 @@ class AuthService {
     }
   }
 
-  // Login user
   static Future<Map<String, dynamic>?> login({
     required String email,
     required String password,
@@ -47,25 +43,22 @@ class AuthService {
       final usersData = prefs.getString(_kUsers) ?? '[]';
       final List<dynamic> users = jsonDecode(usersData);
       
-      // Find user with matching email and password
       final user = users.firstWhere(
         (user) => user['email'] == email && user['password'] == password,
         orElse: () => null,
       );
       
       if (user != null) {
-        // Save current user
         await prefs.setString(_kCurrentUser, jsonEncode(user));
         return Map<String, dynamic>.from(user);
       }
       
-      return null; // Invalid credentials
+      return null;
     } catch (e) {
       return null;
     }
   }
 
-  // Get current logged-in user
   static Future<Map<String, dynamic>?> getCurrentUser() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -79,7 +72,6 @@ class AuthService {
     }
   }
 
-  // Update user profile
   static Future<bool> updateProfile({
     required String name,
     required String email,
@@ -89,7 +81,6 @@ class AuthService {
       final currentUser = await getCurrentUser();
       if (currentUser == null) return false;
       
-      // Update in users list
       final usersData = prefs.getString(_kUsers) ?? '[]';
       final List<dynamic> users = jsonDecode(usersData);
       
@@ -99,7 +90,6 @@ class AuthService {
         users[userIndex]['email'] = email;
         await prefs.setString(_kUsers, jsonEncode(users));
         
-        // Update current user
         currentUser['name'] = name;
         currentUser['email'] = email;
         await prefs.setString(_kCurrentUser, jsonEncode(currentUser));
@@ -111,7 +101,6 @@ class AuthService {
     }
   }
 
-  // Change password
   static Future<bool> changePassword({
     required String oldPassword,
     required String newPassword,
@@ -123,7 +112,6 @@ class AuthService {
         return false;
       }
       
-      // Update in users list
       final usersData = prefs.getString(_kUsers) ?? '[]';
       final List<dynamic> users = jsonDecode(usersData);
       
@@ -132,7 +120,6 @@ class AuthService {
         users[userIndex]['password'] = newPassword;
         await prefs.setString(_kUsers, jsonEncode(users));
         
-        // Update current user
         currentUser['password'] = newPassword;
         await prefs.setString(_kCurrentUser, jsonEncode(currentUser));
         return true;
@@ -143,13 +130,12 @@ class AuthService {
     }
   }
 
-  // Logout
   static Future<void> logout() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_kCurrentUser);
     } catch (e) {
-      // Handle error
+      // Handle error silently
     }
-  }
+  }   
 }

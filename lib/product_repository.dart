@@ -14,31 +14,24 @@ class ProductRepository {
     try {
       final prefs = await SharedPreferences.getInstance();
       
-      // Load products
       final productsData = prefs.getString('products');
       if (productsData != null && productsData.isNotEmpty) {
-        final decodedProducts = jsonDecode(productsData);
-        _products = List<Map<String, dynamic>>.from(decodedProducts);
+        _products = List<Map<String, dynamic>>.from(jsonDecode(productsData));
       } else {
         _products = _getDefaultProducts();
         await saveProducts();
       }
 
-      // Load cart
       final cartData = prefs.getString('cart');
       if (cartData != null && cartData.isNotEmpty) {
-        final decodedCart = jsonDecode(cartData);
-        _cart = List<Map<String, dynamic>>.from(decodedCart);
+        _cart = List<Map<String, dynamic>>.from(jsonDecode(cartData));
       }
 
-      // Load favorites
       final favoritesData = prefs.getString('favorites');
       if (favoritesData != null && favoritesData.isNotEmpty) {
-        final decodedFavorites = jsonDecode(favoritesData);
-        _favorites = List<Map<String, dynamic>>.from(decodedFavorites);
+        _favorites = List<Map<String, dynamic>>.from(jsonDecode(favoritesData));
       }
-    } catch (e) {
-      print('Error loading data: $e');
+    } catch (_) {
       _products = _getDefaultProducts();
       _cart = [];
       _favorites = [];
@@ -77,7 +70,7 @@ class ProductRepository {
         'brand': 'Converse',
         'price': 89,
         'originalPrice': 110,
-        'category': 'Lifestyle',
+        'category': 'Sneakers',
         'image': 'assets/sample1.png',
         'rating': 4.0,
         'reviews': 67,
@@ -91,166 +84,102 @@ class ProductRepository {
   List<Map<String, dynamic>> getFavorites() => List.from(_favorites);
 
   Future<void> addProduct(Map<String, dynamic> product) async {
-    try {
-      // Ensure all required fields are present with safe defaults
-      final completeProduct = {
-        'id': DateTime.now().millisecondsSinceEpoch,
-        'name': product['name']?.toString() ?? 'Unknown Product',
-        'brand': product['brand']?.toString() ?? 'Unknown Brand',
-        'price': _safeParseInt(product['price'], 0),
-        'originalPrice': product['originalPrice'] != null ? _safeParseInt(product['originalPrice'], 0) : null,
-        'category': product['category']?.toString() ?? 'General',
-        'image': product['image']?.toString() ?? 'assets/sample1.png',
-        'rating': _safeParseDouble(product['rating'], 4.0),
-        'reviews': _safeParseInt(product['reviews'], 0),
-        'description': product['description']?.toString() ?? 'No description available.',
-      };
-      
-      _products.add(completeProduct);
-      await saveProducts();
-    } catch (e) {
-      print('Error adding product: $e');
-    }
+    final complete = {
+      'id': DateTime.now().millisecondsSinceEpoch,
+      'name': product['name']?.toString() ?? 'Unknown Product',
+      'brand': product['brand']?.toString() ?? 'Unknown Brand',
+      'price': _toInt(product['price'], 0),
+      'originalPrice': product['originalPrice'] != null ? _toInt(product['originalPrice'], null) : null,
+      'category': product['category']?.toString() ?? 'Sneakers',
+      'image': product['image']?.toString() ?? 'assets/sample1.png',
+      'rating': _toDouble(product['rating'], 4.0),
+      'reviews': _toInt(product['reviews'], 0),
+      'description': product['description']?.toString() ?? 'No description available.',
+    };
+    _products.add(complete);
+    await saveProducts();
   }
 
   Future<void> addToCart(Map<String, dynamic> product) async {
-    try {
-      final productId = _safeParseInt(product['id'], 0);
-      final existingIndex = _cart.indexWhere((item) => _safeParseInt(item['id'], -1) == productId);
-      
-      if (existingIndex >= 0) {
-        _cart[existingIndex]['quantity'] = _safeParseInt(_cart[existingIndex]['quantity'], 0) + 1;
+    final id = _toInt(product['id'], 0);
+    final existing = _cart.indexWhere((e) => _toInt(e['id'], -1) == id);
+    if (existing >= 0) {
+      _cart[existing]['quantity'] = _toInt(_cart[existing]['quantity'], 0) + 1;
+    } else {
+      final item = Map<String, dynamic>.from(product);
+      item['quantity'] = 1;
+      item['size'] = 8;
+      item['color'] = 'Black';
+      _cart.add(item);
+    }
+    await saveCart();
+  }
+
+  Future<void> updateCartQuantity(int productId, int qty) async {
+    final i = _cart.indexWhere((e) => _toInt(e['id'], -1) == productId);
+    if (i >= 0) {
+      if (qty > 0) {
+        _cart[i]['quantity'] = qty;
       } else {
-        final cartItem = Map<String, dynamic>.from(product);
-        cartItem['quantity'] = 1;
-        cartItem['size'] = 8;
-        cartItem['color'] = 'Black';
-        _cart.add(cartItem);
+        _cart.removeAt(i);
       }
       await saveCart();
-    } catch (e) {
-      print('Error adding to cart: $e');
-    }
-  }
-
-  Future<void> removeFromCart(int productId) async {
-    try {
-      _cart.removeWhere((item) => _safeParseInt(item['id'], -1) == productId);
-      await saveCart();
-    } catch (e) {
-      print('Error removing from cart: $e');
-    }
-  }
-
-  Future<void> updateCartQuantity(int productId, int quantity) async {
-    try {
-      final index = _cart.indexWhere((item) => _safeParseInt(item['id'], -1) == productId);
-      if (index >= 0) {
-        if (quantity > 0) {
-          _cart[index]['quantity'] = quantity;
-        } else {
-          _cart.removeAt(index);
-        }
-        await saveCart();
-      }
-    } catch (e) {
-      print('Error updating cart quantity: $e');
-    }
-  }
-
-  Future<void> addToFavorites(Map<String, dynamic> product) async {
-    try {
-      final productId = _safeParseInt(product['id'], 0);
-      if (!_favorites.any((item) => _safeParseInt(item['id'], -1) == productId)) {
-        _favorites.add(product);
-        await saveFavorites();
-      }
-    } catch (e) {
-      print('Error adding to favorites: $e');
-    }
-  }
-
-  Future<void> removeFromFavorites(int productId) async {
-    try {
-      _favorites.removeWhere((item) => _safeParseInt(item['id'], -1) == productId);
-      await saveFavorites();
-    } catch (e) {
-      print('Error removing from favorites: $e');
-    }
-  }
-
-  bool isFavorite(int productId) {
-    try {
-      return _favorites.any((item) => _safeParseInt(item['id'], -1) == productId);
-    } catch (e) {
-      print('Error checking favorite: $e');
-      return false;
-    }
-  }
-
-  Future<void> saveProducts() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('products', jsonEncode(_products));
-    } catch (e) {
-      print('Error saving products: $e');
-    }
-  }
-
-  Future<void> saveCart() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('cart', jsonEncode(_cart));
-    } catch (e) {
-      print('Error saving cart: $e');
-    }
-  }
-
-  Future<void> saveFavorites() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('favorites', jsonEncode(_favorites));
-    } catch (e) {
-      print('Error saving favorites: $e');
     }
   }
 
   Future<void> clearCart() async {
-    try {
-      _cart.clear();
-      await saveCart();
-    } catch (e) {
-      print('Error clearing cart: $e');
+    _cart.clear();
+    await saveCart();
+  }
+
+  Future<void> removeFromCart(int productId) async {
+    _cart.removeWhere((e) => _toInt(e['id'], -1) == productId);
+    await saveCart();
+  }
+
+  Future<void> addToFavorites(Map<String, dynamic> product) async {
+    final id = _toInt(product['id'], 0);
+    if (!_favorites.any((e) => _toInt(e['id'], -1) == id)) {
+      _favorites.add(product);
+      await saveFavorites();
     }
   }
 
-  Future<void> clearAllData() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
-      _products = _getDefaultProducts();
-      _cart = [];
-      _favorites = [];
-      await saveProducts();
-    } catch (e) {
-      print('Error clearing all data: $e');
-    }
+  Future<void> removeFromFavorites(int productId) async {
+    _favorites.removeWhere((e) => _toInt(e['id'], -1) == productId);
+    await saveFavorites();
   }
 
-  // Helper methods for safe parsing
-  int _safeParseInt(dynamic value, int defaultValue) {
-    if (value == null) return defaultValue;
-    if (value is int) return value;
-    if (value is double) return value.toInt();
-    if (value is String) return int.tryParse(value) ?? defaultValue;
-    return defaultValue;
+  bool isFavorite(int productId) => _favorites.any((e) => _toInt(e['id'], -1) == productId);
+
+  Future<void> saveProducts() async {
+    final p = await SharedPreferences.getInstance();
+    await p.setString('products', jsonEncode(_products));
   }
 
-  double _safeParseDouble(dynamic value, double defaultValue) {
-    if (value == null) return defaultValue;
-    if (value is double) return value;
-    if (value is int) return value.toDouble();
-    if (value is String) return double.tryParse(value) ?? defaultValue;
-    return defaultValue;
+  Future<void> saveCart() async {
+    final p = await SharedPreferences.getInstance();
+    await p.setString('cart', jsonEncode(_cart));
+  }
+
+  Future<void> saveFavorites() async {
+    final p = await SharedPreferences.getInstance();
+    await p.setString('favorites', jsonEncode(_favorites));
+  }
+
+  int _toInt(dynamic v, int? d) {
+    if (v == null) return d ?? 0;
+    if (v is int) return v;
+    if (v is double) return v.toInt();
+    if (v is String) return int.tryParse(v) ?? (d ?? 0);
+    return d ?? 0;
+  }
+
+  double _toDouble(dynamic v, double d) {
+    if (v == null) return d;
+    if (v is double) return v;
+    if (v is int) return v.toDouble();
+    if (v is String) return double.tryParse(v) ?? d;
+    return d;
   }
 }

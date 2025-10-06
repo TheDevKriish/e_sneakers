@@ -8,14 +8,10 @@ class AddressBookScreen extends StatefulWidget {
 
 class _AddressBookScreenState extends State<AddressBookScreen> {
   final addresses = <Map<String, String>>[
-    {
-      'label': 'Home',
-      'line': 'Building 12, Main Street, Springfield',
-      'phone': '+91 98765 43210'
-    },
+    {'label': 'Home', 'line': 'Building 12, Main Street, Springfield', 'phone': '+91 98765 43210'},
   ];
 
-  void _addAddress() {
+  void _add() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -25,33 +21,26 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
         final phone = TextEditingController();
         return Padding(
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom,
-            left: 16, right: 16, top: 16,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Add Address', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              const SizedBox(height: 12),
-              TextField(decoration: const InputDecoration(labelText: 'Label'), controller: label),
-              TextField(decoration: const InputDecoration(labelText: 'Address Line'), controller: line),
-              TextField(decoration: const InputDecoration(labelText: 'Phone'), controller: phone),
-              const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: () {
-                  if (label.text.isNotEmpty && line.text.isNotEmpty) {
-                    setState(() {
-                      addresses.add({'label': label.text, 'line': line.text, 'phone': phone.text});
-                    });
-                    Navigator.pop(ctx);
-                  }
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white),
-                child: const Text('Save'),
-              ),
-              const SizedBox(height: 12),
-            ],
-          ),
+            bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 16, right: 16, top: 16),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Text('Add Address', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 12),
+            TextField(decoration: const InputDecoration(labelText: 'Label'), controller: label),
+            TextField(decoration: const InputDecoration(labelText: 'Address Line'), controller: line),
+            TextField(decoration: const InputDecoration(labelText: 'Phone'), controller: phone),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: () {
+                if (label.text.isNotEmpty && line.text.isNotEmpty) {
+                  setState(() => addresses.add({'label': label.text, 'line': line.text, 'phone': phone.text}));
+                  Navigator.pop(ctx);
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white),
+              child: const Text('Save'),
+            ),
+            const SizedBox(height: 12),
+          ]),
         );
       },
     );
@@ -62,8 +51,8 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Address Book')),
       floatingActionButton: FloatingActionButton(
-        onPressed: _addAddress,
         backgroundColor: Colors.black,
+        onPressed: _add,
         child: const Icon(Icons.add, color: Colors.white),
       ),
       body: ListView.separated(
@@ -74,6 +63,7 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
           final a = addresses[i];
           return Card(
             child: ListTile(
+              leading: const Icon(Icons.location_on),
               title: Text('${a['label']} • ${a['phone'] ?? ''}'),
               subtitle: Text(a['line'] ?? ''),
               trailing: IconButton(

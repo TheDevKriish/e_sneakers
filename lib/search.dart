@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'product_repository.dart';
 import 'product_screen.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -9,30 +10,40 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   final searchController = TextEditingController();
-  final List<Map<String, dynamic>> allProducts = [
-    {'name': 'Air Max 270', 'brand': 'Nike', 'price': 159, 'image': 'assets/sample1.png', 'rating': 4.5, 'reviews': 128},
-    {'name': 'Classic Black', 'brand': 'Adidas', 'price': 129, 'image': 'assets/sample2.png', 'rating': 4.2, 'reviews': 95},
-    {'name': 'Ultraboost 22', 'brand': 'Adidas', 'price': 190, 'image': 'assets/sample1.png', 'rating': 4.6, 'reviews': 92},
-    {'name': 'Chuck Taylor All Star', 'brand': 'Converse', 'price': 55, 'image': 'assets/sample2.png', 'rating': 4.0, 'reviews': 63},
-  ];
-
+  List<Map<String, dynamic>> all = [];
   List<Map<String, dynamic>> results = [];
 
   @override
   void initState() {
     super.initState();
-    results = allProducts;
+    all = ProductRepository().getProducts();
+    results = List.from(all);
   }
 
-  void _runSearch(String input) {
+  String _getString(dynamic value, String defaultValue) {
+    if (value == null) return defaultValue;
+    return value.toString();
+  }
+
+  int _getInt(dynamic value, int defaultValue) {
+    if (value == null) return defaultValue;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? defaultValue;
+    return defaultValue;
+  }
+
+  void _run(String v) {
     setState(() {
-      if (input.isEmpty) {
-        results = allProducts;
+      if (v.trim().isEmpty) {
+        results = List.from(all);
       } else {
-        results = allProducts.where((p) =>
-          p['name'].toString().toLowerCase().contains(input.toLowerCase()) ||
-          p['brand'].toString().toLowerCase().contains(input.toLowerCase())
-        ).toList();
+        results = all.where((p) {
+          final name = _getString(p['name'], '').toLowerCase();
+          final brand = _getString(p['brand'], '').toLowerCase();
+          final query = v.toLowerCase();
+          return name.contains(query) || brand.contains(query);
+        }).toList();
       }
     });
   }
@@ -41,45 +52,44 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        title: const Text('Search'),
-      ),
+      appBar: AppBar(title: const Text('Search')),
       body: Padding(
         padding: const EdgeInsets.all(18.0),
         child: Column(
           children: [
             TextField(
               controller: searchController,
+              onChanged: _run,
               decoration: InputDecoration(
                 prefixIcon: const Icon(Icons.search),
-                hintText: "Search sneakers, brands...",
+                hintText: 'Search sneakers, brands...',
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
               ),
-              onChanged: _runSearch,
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 16),
             Expanded(
               child: results.isEmpty
                   ? const Center(child: Text('No products found'))
-                  : ListView.builder(
+                  : ListView.separated(
                       itemCount: results.length,
-                      itemBuilder: (context, index) {
-                        final product = results[index];
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (ctx, i) {
+                        final p = results[i];
+                        final name = _getString(p['name'], 'Unknown Product');
+                        final brand = _getString(p['brand'], 'Unknown Brand');
+                        final price = _getInt(p['price'], 0);
+                        
                         return Card(
                           child: ListTile(
                             leading: Icon(Icons.directions_run, color: Colors.grey[400], size: 32),
-                            title: Text(product['name'],
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 16)),
-                            subtitle: Text(product['brand']),
-                            trailing: Text('\$${product['price']}'),
+                            title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                            subtitle: Text(brand),
+                            trailing: Text('\$$price'),
                             onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => ProductScreen(product: product),
-                              ),
+                              context, 
+                              MaterialPageRoute(builder: (_) => ProductScreen(product: p))
                             ),
                           ),
                         );

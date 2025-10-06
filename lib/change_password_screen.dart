@@ -13,6 +13,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final newController = TextEditingController();
   final confirmController = TextEditingController();
   bool _loading = false;
+  bool _showOld = false;
+  bool _showNew = false;
+  bool _showConfirm = false;
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -32,8 +35,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     if (ok) Navigator.pop(context);
   }
 
-  InputDecoration _dec(String hint) => InputDecoration(
+  InputDecoration _dec(String hint, {bool show = false, VoidCallback? toggle}) => InputDecoration(
         hintText: hint,
+        suffixIcon: IconButton(
+          icon: Icon(show ? Icons.visibility_off : Icons.visibility),
+          onPressed: toggle,
+        ),
         filled: true,
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
@@ -56,8 +63,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: oldController,
-                  obscureText: true,
-                  decoration: _dec('Enter old password'),
+                  obscureText: !_showOld,
+                  decoration: _dec('Enter old password', show: _showOld, toggle: () => setState(() => _showOld = !_showOld)),
                   validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
                 ),
                 const SizedBox(height: 18),
@@ -65,20 +72,18 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: newController,
-                  obscureText: true,
-                  decoration: _dec('Enter new password'),
-                  validator: (v) =>
-                      (v == null || v.length < 6) ? 'Min 6 characters' : null,
+                  obscureText: !_showNew,
+                  decoration: _dec('Enter new password', show: _showNew, toggle: () => setState(() => _showNew = !_showNew)),
+                  validator: (v) => (v == null || v.length < 6) ? 'Min 6 characters' : null,
                 ),
                 const SizedBox(height: 18),
                 const Text('Confirm Password', style: TextStyle(fontWeight: FontWeight.w500)),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: confirmController,
-                  obscureText: true,
-                  decoration: _dec('Re-enter new password'),
-                  validator: (v) =>
-                      (v != newController.text) ? 'Passwords do not match' : null,
+                  obscureText: !_showConfirm,
+                  decoration: _dec('Re-enter new password', show: _showConfirm, toggle: () => setState(() => _showConfirm = !_showConfirm)),
+                  validator: (v) => (v != newController.text) ? 'Passwords do not match' : null,
                 ),
                 const SizedBox(height: 28),
                 SizedBox(
@@ -89,15 +94,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.black,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     child: _loading
-                        ? const SizedBox(
-                            width: 20, height: 20,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                          )
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                         : const Text('Update Password', style: TextStyle(fontWeight: FontWeight.w600)),
                   ),
                 ),
