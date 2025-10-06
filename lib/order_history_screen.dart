@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 class OrderHistoryScreen extends StatelessWidget {
   const OrderHistoryScreen({super.key});
-
   @override
   Widget build(BuildContext context) {
     final orders = [
@@ -11,12 +10,10 @@ class OrderHistoryScreen extends StatelessWidget {
     ];
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Order History", style: TextStyle(color: Colors.black)),
-        backgroundColor: const Color(0xFFF8F9FA),
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        title: const Text("Order History"),
       ),
       body: ListView(
+        padding: const EdgeInsets.all(18),
         children: orders.map((order) => Card(
           child: ListTile(
             title: Text(order["item"] as String, style: const TextStyle(fontWeight: FontWeight.bold)),

@@ -5,17 +5,16 @@ class EditProfileScreen extends StatefulWidget {
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
 }
+
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final nameController = TextEditingController(text: "Lucis Caminos");
   final emailController = TextEditingController(text: "luciscaminos@gmail.com");
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Edit Profile", style: TextStyle(color: Colors.black)),
-        backgroundColor: const Color(0xFFF8F9FA),
-        iconTheme: const IconThemeData(color: Colors.black),
-        elevation: 0,
+        title: const Text("Edit Profile"),
       ),
       body: Padding(
         padding: const EdgeInsets.all(24),
@@ -38,7 +37,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
               ),
             ),
-            const SizedBox(height: 40),
+            const Spacer(),
             SizedBox(
               width: double.infinity,
               height: 48,
