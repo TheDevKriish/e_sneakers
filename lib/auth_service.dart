@@ -137,5 +137,7 @@ class AuthService {
     } catch (e) {
       // Handle error silently
     }
-  }   
+  }
+
+  static Future<void> setCurrentUser(Map<String, Object> user) async {}   
 }

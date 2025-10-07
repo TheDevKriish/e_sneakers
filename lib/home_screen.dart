@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'product_screen.dart';
 import 'cart_screen.dart';
 import 'product_repository.dart';
+import 'search.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -79,6 +80,12 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.search, color: Colors.black87),
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen()));
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.shopping_cart_outlined, color: Colors.black87),
             onPressed: () {
