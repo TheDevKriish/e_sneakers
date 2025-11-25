@@ -23,17 +23,17 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace "com.example.esnaker"
-    compileSdkVersion 34
+    namespace "com.example.e_sneakersr"
+    compileSdk 36
     ndkVersion flutter.ndkVersion
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
     }
 
     sourceSets {
@@ -41,9 +41,9 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.example.esnaker"
-        minSdkVersion 21
-        targetSdkVersion flutter.targetSdkVersion
+        applicationId "com.example.e_sneakers"
+        minSdkVersion 26
+        targetSdk 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
@@ -61,7 +61,7 @@ flutter {
 }
 
 dependencies {
-    implementation platform('com.google.firebase:firebase-bom:32.7.0')
+    implementation platform('com.google.firebase:firebase-bom:33.7.0')
     implementation 'com.google.firebase:firebase-analytics'
 }
 
