@@ -101,14 +101,14 @@ class ProductsProvider with ChangeNotifier {
     _filteredProducts = filtered;
   }
 
-  // Add product (Admin only)
+  // Add product (Admin only) - IMAGE IS NOW OPTIONAL
   Future<bool> addProduct({
     required String name,
     required String brand,
     required double price,
     double? originalPrice,
     required String category,
-    required File imageFile,
+    File? imageFile, // Made optional
     required String description,
     required int stock,
   }) async {
@@ -117,7 +117,7 @@ class ProductsProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Create product with temporary ID
+      // Create product with temporary ID and empty imageUrl
       final tempProduct = Product(
         id: 'temp',
         name: name,
@@ -125,7 +125,7 @@ class ProductsProvider with ChangeNotifier {
         price: price,
         originalPrice: originalPrice,
         category: category,
-        imageUrl: '',
+        imageUrl: '', // Start with empty imageUrl
         description: description,
         stock: stock,
         createdAt: DateTime.now(),
@@ -134,10 +134,14 @@ class ProductsProvider with ChangeNotifier {
       // Add to Firestore first
       final productId = await _productService.addProduct(tempProduct);
 
-      // Upload image
-      final imageUrl = await _storageService.uploadProductImage(imageFile, productId);
+      String imageUrl = '';
+      
+      // Upload image only if provided
+      if (imageFile != null) {
+        imageUrl = await _storageService.uploadProductImage(imageFile, productId);
+      }
 
-      // Update product with image URL
+      // Update product with image URL (or keep empty if no image)
       final finalProduct = tempProduct.copyWith(id: productId, imageUrl: imageUrl);
       await _productService.updateProduct(finalProduct);
 
