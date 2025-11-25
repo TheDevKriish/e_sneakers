@@ -1,8 +1,7 @@
 // Add product screen
 // FILE: lib/screens/admin/add_product_screen.dart
-// PURPOSE: Add new product with image upload
+// PURPOSE: Add new product with image upload (WEB + MOBILE COMPATIBLE)
 
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -11,6 +10,8 @@ import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../utils/validators.dart';
 import '../../services/firebase_storage_service.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io';
 
 class AddProductScreen extends StatefulWidget {
   const AddProductScreen({super.key});
@@ -30,7 +31,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final _stockController = TextEditingController();
   final _storageService = FirebaseStorageService();
 
-  File? _selectedImage;
+  XFile? _selectedImageXFile; // Use XFile for web compatibility
   final _imagePicker = ImagePicker();
 
   @override
@@ -55,15 +56,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
       );
 
       if (pickedFile != null) {
-        final file = File(pickedFile.path);
-
-        // Validate image format - accepts jpg, jpeg, png
-        final fileName = pickedFile.name.toLowerCase();
-        final isValidFormat = fileName.endsWith('.jpg') || 
-                             fileName.endsWith('.jpeg') || 
-                             fileName.endsWith('.png');
-
-        if (!isValidFormat) {
+        // Validate image format using XFile methods
+        if (!_storageService.isValidImageXFile(pickedFile)) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -74,8 +68,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
           return;
         }
 
-        // Check file size
-        if (!await _storageService.isValidFileSize(file)) {
+        // Check file size using XFile methods
+        if (!await _storageService.isValidFileSizeXFile(pickedFile)) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -87,7 +81,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         }
 
         setState(() {
-          _selectedImage = file;
+          _selectedImageXFile = pickedFile;
         });
       }
     } catch (e) {
@@ -104,7 +98,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   Future<void> _addProduct() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Image is now optional - removed validation check
+    // Image is optional
     
     final productsProvider = Provider.of<ProductsProvider>(context, listen: false);
 
@@ -116,7 +110,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
           ? double.parse(_originalPriceController.text.trim())
           : null,
       category: _categoryController.text.trim(),
-      imageFile: _selectedImage, // Can be null now
+      imageFile: _selectedImageXFile, // Pass XFile
       description: _descriptionController.text.trim(),
       stock: int.parse(_stockController.text.trim()),
     );
@@ -164,13 +158,18 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.grey[300]!),
                 ),
-                child: _selectedImage != null
+                child: _selectedImageXFile != null
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: Image.file(
-                          _selectedImage!,
-                          fit: BoxFit.cover,
-                        ),
+                        child: kIsWeb
+                            ? Image.network(
+                                _selectedImageXFile!.path,
+                                fit: BoxFit.cover,
+                              )
+                            : Image.file(
+                                File(_selectedImageXFile!.path),
+                                fit: BoxFit.cover,
+                              ),
                       )
                     : Column(
                         mainAxisAlignment: MainAxisAlignment.center,
