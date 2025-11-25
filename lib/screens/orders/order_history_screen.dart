@@ -28,7 +28,7 @@ class OrderHistoryScreen extends StatelessWidget {
               stream: FirebaseFirestore.instance
                   .collection('orders')
                   .where('userId', isEqualTo: userId)
-                  .orderBy('orderDate', descending: true)
+                  // REMOVED orderBy to avoid index requirement
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -47,9 +47,13 @@ class OrderHistoryScreen extends StatelessWidget {
                   );
                 }
 
+                // Get orders and sort locally
                 final orders = snapshot.data!.docs
                     .map((doc) => OrderModel.fromFirestore(doc))
                     .toList();
+                
+                // Sort by date in memory (descending - newest first)
+                orders.sort((a, b) => b.orderDate.compareTo(a.orderDate));
 
                 return ListView.builder(
                   padding: const EdgeInsets.all(16),
