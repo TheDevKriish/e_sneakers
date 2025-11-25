@@ -57,12 +57,17 @@ class _AddProductScreenState extends State<AddProductScreen> {
       if (pickedFile != null) {
         final file = File(pickedFile.path);
 
-        // Validate image
-        if (!_storageService.isValidImage(file)) {
+        // Validate image format - accepts jpg, jpeg, png
+        final fileName = pickedFile.name.toLowerCase();
+        final isValidFormat = fileName.endsWith('.jpg') || 
+                             fileName.endsWith('.jpeg') || 
+                             fileName.endsWith('.png');
+
+        if (!isValidFormat) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Please select a valid image file (jpg, png, webp)'),
+              content: Text('Please select a valid image (JPG, JPEG, or PNG format)'),
               backgroundColor: Colors.red,
             ),
           );
@@ -99,16 +104,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
   Future<void> _addProduct() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (_selectedImage == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a product image'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
+    // Image is now optional - removed validation check
+    
     final productsProvider = Provider.of<ProductsProvider>(context, listen: false);
 
     final success = await productsProvider.addProduct(
@@ -119,7 +116,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
           ? double.parse(_originalPriceController.text.trim())
           : null,
       category: _categoryController.text.trim(),
-      imageFile: _selectedImage!,
+      imageFile: _selectedImage, // Can be null now
       description: _descriptionController.text.trim(),
       stock: int.parse(_stockController.text.trim()),
     );
@@ -181,8 +178,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           Icon(Icons.add_photo_alternate, size: 64, color: Colors.grey[400]),
                           const SizedBox(height: 8),
                           Text(
-                            'Tap to select product image',
+                            'Tap to select product image (Optional)',
                             style: TextStyle(color: Colors.grey[600]),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Formats: JPG, JPEG, PNG',
+                            style: TextStyle(color: Colors.grey[500], fontSize: 12),
                           ),
                         ],
                       ),
