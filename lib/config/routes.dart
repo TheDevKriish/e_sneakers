@@ -1,13 +1,11 @@
-// App routing configuration
 // FILE: lib/config/routes.dart
-// PURPOSE: Centralized route definitions
+// PURPOSE: Route definitions
 
 import 'package:flutter/material.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/signup_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
 import '../screens/main/main_navigation.dart';
-import '../screens/product/product_detail_screen.dart';
 import '../screens/checkout/checkout_screen.dart';
 import '../screens/checkout/address_book_screen.dart';
 import '../screens/checkout/address_form_screen.dart';
@@ -18,14 +16,13 @@ import '../screens/profile/favorites_screen.dart';
 import '../screens/profile/payment_methods_screen.dart';
 import '../screens/admin/admin_dashboard.dart';
 import '../screens/admin/add_product_screen.dart';
-import '../screens/admin/edit_product_screen.dart';
 
 class AppRoutes {
+  static const String splash = '/';
   static const String login = '/login';
   static const String signup = '/signup';
   static const String forgotPassword = '/forgot-password';
   static const String home = '/home';
-  static const String productDetail = '/product-detail';
   static const String checkout = '/checkout';
   static const String addressBook = '/address-book';
   static const String addressForm = '/address-form';

@@ -1,9 +1,7 @@
-// Main entry point for E-commerce Flutter app
 // FILE: lib/main.dart
 // PURPOSE: App entry point with Firebase initialization and theme
 
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'config/firebase_init.dart';
 import 'config/routes.dart';
@@ -11,7 +9,7 @@ import 'theme/app_theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/products_provider.dart';
 import 'providers/cart_provider.dart';
-import 'providers/favorites_provider.dart' as favorites_provider;
+import 'providers/favorites_provider.dart';
 import 'screens/auth/splash_screen.dart';
 
 void main() async {
@@ -35,7 +33,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ProductsProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
-        ChangeNotifierProvider(create: (_) => favorites_provider.FavoritesProvider()),
+        ChangeNotifierProvider(create: (_) => FavoritesProvider()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

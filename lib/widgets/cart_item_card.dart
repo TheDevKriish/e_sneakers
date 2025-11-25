@@ -1,6 +1,5 @@
-// Cart item card widget
 // FILE: lib/widgets/cart_item_card.dart
-// PURPOSE: Reusable cart item widget
+// PURPOSE: Cart item display card
 
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -25,7 +24,7 @@ class CartItemCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.all(12),
         child: Row(
           children: [
             // Product Image
@@ -50,7 +49,7 @@ class CartItemCard extends StatelessWidget {
             ),
             const SizedBox(width: 12),
 
-            // Product Details
+            // Product Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,8 +57,8 @@ class CartItemCard extends StatelessWidget {
                   Text(
                     item.name,
                     style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -72,12 +71,20 @@ class CartItemCard extends StatelessWidget {
                       color: Colors.grey[600],
                     ),
                   ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Size: US ${item.size}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     '₹${item.price.toStringAsFixed(0)}',
                     style: const TextStyle(
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
                     ),
                   ),
                 ],
@@ -86,54 +93,47 @@ class CartItemCard extends StatelessWidget {
 
             // Quantity Controls
             Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 // Remove Button
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 20),
+                  icon: const Icon(Icons.delete_outline),
                   onPressed: onRemove,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
                   color: Colors.red,
+                  iconSize: 20,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
 
-                // Quantity Selector
+                // Quantity
                 Container(
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.grey[300]!),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Decrement
-                      InkWell(
-                        onTap: onDecrement,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          child: const Icon(Icons.remove, size: 16),
+                      IconButton(
+                        icon: const Icon(Icons.remove, size: 16),
+                        onPressed: onDecrement,
+                        padding: const EdgeInsets.all(4),
+                        constraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
                         ),
                       ),
-
-                      // Quantity
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text(
-                          '${item.quantity}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
+                      Text(
+                        '${item.quantity}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-
-                      // Increment
-                      InkWell(
-                        onTap: onIncrement,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          child: const Icon(Icons.add, size: 16),
+                      IconButton(
+                        icon: const Icon(Icons.add, size: 16),
+                        onPressed: onIncrement,
+                        padding: const EdgeInsets.all(4),
+                        constraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
                         ),
                       ),
                     ],

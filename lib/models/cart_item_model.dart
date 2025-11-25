@@ -1,4 +1,3 @@
-// Cart item data model
 // FILE: lib/models/cart_item_model.dart
 // PURPOSE: Cart item data model
 
@@ -11,8 +10,8 @@ class CartItem {
   final String brand;
   final double price;
   final String imageUrl;
-  int quantity;
-  final DateTime addedAt;
+  final int size;
+  final int quantity;
 
   CartItem({
     required this.cartItemId,
@@ -21,12 +20,13 @@ class CartItem {
     required this.brand,
     required this.price,
     required this.imageUrl,
-    this.quantity = 1,
-    required this.addedAt,
+    required this.size,
+    required this.quantity,
   });
 
   double get subtotal => price * quantity;
 
+  // Create CartItem from Firestore document
   factory CartItem.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return CartItem(
@@ -35,34 +35,60 @@ class CartItem {
       name: data['name'] ?? '',
       brand: data['brand'] ?? '',
       price: (data['price'] ?? 0).toDouble(),
-      imageUrl: data['image'] ?? '',
+      imageUrl: data['imageUrl'] ?? '',
+      size: data['size'] ?? 0,
       quantity: data['quantity'] ?? 1,
-      addedAt: (data['addedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
 
-  factory CartItem.fromMap(Map<String, dynamic> map, String cartItemId) {
+  // Create CartItem from Map
+  factory CartItem.fromMap(Map<String, dynamic> data, String id) {
     return CartItem(
-      cartItemId: cartItemId,
-      productId: map['productId'] ?? '',
-      name: map['name'] ?? '',
-      brand: map['brand'] ?? '',
-      price: (map['price'] ?? 0).toDouble(),
-      imageUrl: map['image'] ?? '',
-      quantity: map['quantity'] ?? 1,
-      addedAt: (map['addedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      cartItemId: id,
+      productId: data['productId'] ?? '',
+      name: data['name'] ?? '',
+      brand: data['brand'] ?? '',
+      price: (data['price'] ?? 0).toDouble(),
+      imageUrl: data['imageUrl'] ?? '',
+      size: data['size'] ?? 0,
+      quantity: data['quantity'] ?? 1,
     );
   }
 
+  // Convert CartItem to Map for Firestore
   Map<String, dynamic> toMap() {
     return {
       'productId': productId,
       'name': name,
       'brand': brand,
       'price': price,
-      'image': imageUrl,
+      'imageUrl': imageUrl,
+      'size': size,
       'quantity': quantity,
-      'addedAt': Timestamp.fromDate(addedAt),
+      'subtotal': subtotal,
     };
+  }
+
+  // Create a copy with modified fields
+  CartItem copyWith({
+    String? cartItemId,
+    String? productId,
+    String? name,
+    String? brand,
+    double? price,
+    String? imageUrl,
+    int? size,
+    int? quantity,
+  }) {
+    return CartItem(
+      cartItemId: cartItemId ?? this.cartItemId,
+      productId: productId ?? this.productId,
+      name: name ?? this.name,
+      brand: brand ?? this.brand,
+      price: price ?? this.price,
+      imageUrl: imageUrl ?? this.imageUrl,
+      size: size ?? this.size,
+      quantity: quantity ?? this.quantity,
+    );
   }
 }

@@ -1,162 +1,139 @@
-// Cart provider
-// FILE: lib/providers/favorites_provider.dart
-// PURPOSE: Favorites/Wishlist state management
+// FILE: lib/providers/cart_provider.dart
+// PURPOSE: Shopping cart state management
 
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/product_model.dart';
-import '../services/firebase_auth_service.dart';
+import '../models/cart_item_model.dart';
+import '../services/cart_service.dart';
 
-class FavoritesProvider with ChangeNotifier {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuthService _authService = FirebaseAuthService();
-
-  List<Product> _favorites = [];
+class CartProvider with ChangeNotifier {
+  final CartService _cartService = CartService();
+  
+  List<CartItem> _cartItems = [];
   bool _isLoading = false;
   String? _errorMessage;
 
-  List<Product> get favorites => _favorites;
+  List<CartItem> get cartItems => _cartItems;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-  bool get isEmpty => _favorites.isEmpty;
-  int get count => _favorites.length;
+  bool get isEmpty => _cartItems.isEmpty;
+  
+  int get itemCount {
+    return _cartItems.fold<int>(0, (previousValue, item) => previousValue + item.quantity);
+  }
+  
+  double get totalAmount {
+    return _cartItems.fold<double>(0.0, (previousValue, item) => previousValue + item.subtotal);
+  }
 
-  // Load favorites
-  Future<void> loadFavorites() async {
+  // Load cart from Firestore
+  Future<void> loadCart() async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      final userId = _authService.getCurrentUserId();
-      if (userId == null) {
-        _favorites = [];
-        _isLoading = false;
+      _cartItems = await _cartService.getCartItems();
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = 'Failed to load cart';
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Add to cart
+  Future<void> addToCart({
+    required String productId,
+    required String name,
+    required String brand,
+    required double price,
+    required String imageUrl,
+    required int size,
+  }) async {
+    try {
+      // Check if product already exists in cart
+      final existingIndex = _cartItems.indexWhere(
+        (item) => item.productId == productId && item.size == size,
+      );
+
+      if (existingIndex != -1) {
+        // Increment quantity
+        await incrementQuantity(_cartItems[existingIndex].cartItemId);
+      } else {
+        // Add new item
+        final cartItem = await _cartService.addToCart(
+          productId: productId,
+          name: name,
+          brand: brand,
+          price: price,
+          imageUrl: imageUrl,
+          size: size,
+        );
+        _cartItems.add(cartItem);
         notifyListeners();
-        return;
       }
-
-      final snapshot = await _firestore
-          .collection('users')
-          .doc(userId)
-          .collection('favorites')
-          .orderBy('addedAt', descending: true)
-          .get();
-
-      // Get product IDs
-      final productIds = snapshot.docs
-          .map((doc) => (doc.data())['productId'] as String)
-          .toList();
-
-      // Fetch full product details
-      if (productIds.isNotEmpty) {
-        final productsSnapshot = await _firestore
-            .collection('products')
-            .where(FieldPath.documentId, whereIn: productIds)
-            .get();
-
-        _favorites = productsSnapshot.docs
-            .map((doc) => Product.fromFirestore(doc))
-            .toList();
-      } else {
-        _favorites = [];
-      }
-
-      _isLoading = false;
-      notifyListeners();
     } catch (e) {
-      _errorMessage = 'Failed to load favorites';
-      _isLoading = false;
+      _errorMessage = 'Failed to add to cart';
       notifyListeners();
     }
   }
 
-  // Check if product is favorite
-  bool isFavorite(String productId) {
-    return _favorites.any((product) => product.id == productId);
-  }
-
-  // Toggle favorite
-  Future<void> toggleFavorite(Product product) async {
-    final userId = _authService.getCurrentUserId();
-    if (userId == null) {
-      _errorMessage = 'Please login to add favorites';
-      notifyListeners();
-      return;
-    }
-
+  // Increment quantity
+  Future<void> incrementQuantity(String cartItemId) async {
     try {
-      if (isFavorite(product.id)) {
-        // Remove from favorites
-        await _removeFavorite(product.id);
-        _favorites.removeWhere((p) => p.id == product.id);
-      } else {
-        // Add to favorites
-        await _addFavorite(product);
-        _favorites.insert(0, product);
+      final index = _cartItems.indexWhere((item) => item.cartItemId == cartItemId);
+      if (index != -1) {
+        final newQuantity = _cartItems[index].quantity + 1;
+        await _cartService.updateQuantity(cartItemId, newQuantity);
+        _cartItems[index] = _cartItems[index].copyWith(quantity: newQuantity);
+        notifyListeners();
       }
-      notifyListeners();
     } catch (e) {
-      _errorMessage = 'Failed to update favorites';
+      _errorMessage = 'Failed to update quantity';
       notifyListeners();
     }
   }
 
-  // Add to favorites
-  Future<void> _addFavorite(Product product) async {
-    final userId = _authService.getCurrentUserId();
-    if (userId == null) return;
-
-    await _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('favorites')
-        .add({
-      'productId': product.id,
-      'name': product.name,
-      'brand': product.brand,
-      'price': product.price,
-      'image': product.imageUrl,
-      'addedAt': FieldValue.serverTimestamp(),
-    });
-  }
-
-  // Remove from favorites
-  Future<void> _removeFavorite(String productId) async {
-    final userId = _authService.getCurrentUserId();
-    if (userId == null) return;
-
-    final snapshot = await _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('favorites')
-        .where('productId', isEqualTo: productId)
-        .get();
-
-    for (var doc in snapshot.docs) {
-      await doc.reference.delete();
-    }
-  }
-
-  // Clear all favorites
-  Future<void> clearFavorites() async {
+  // Decrement quantity
+  Future<void> decrementQuantity(String cartItemId) async {
     try {
-      final userId = _authService.getCurrentUserId();
-      if (userId == null) return;
-
-      final snapshot = await _firestore
-          .collection('users')
-          .doc(userId)
-          .collection('favorites')
-          .get();
-
-      for (var doc in snapshot.docs) {
-        await doc.reference.delete();
+      final index = _cartItems.indexWhere((item) => item.cartItemId == cartItemId);
+      if (index != -1) {
+        if (_cartItems[index].quantity > 1) {
+          final newQuantity = _cartItems[index].quantity - 1;
+          await _cartService.updateQuantity(cartItemId, newQuantity);
+          _cartItems[index] = _cartItems[index].copyWith(quantity: newQuantity);
+          notifyListeners();
+        } else {
+          await removeFromCart(cartItemId);
+        }
       }
+    } catch (e) {
+      _errorMessage = 'Failed to update quantity';
+      notifyListeners();
+    }
+  }
 
-      _favorites.clear();
+  // Remove from cart
+  Future<void> removeFromCart(String cartItemId) async {
+    try {
+      await _cartService.removeFromCart(cartItemId);
+      _cartItems.removeWhere((item) => item.cartItemId == cartItemId);
       notifyListeners();
     } catch (e) {
-      _errorMessage = 'Failed to clear favorites';
+      _errorMessage = 'Failed to remove item';
+      notifyListeners();
+    }
+  }
+
+  // Clear cart
+  Future<void> clearCart() async {
+    try {
+      await _cartService.clearCart();
+      _cartItems.clear();
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = 'Failed to clear cart';
       notifyListeners();
     }
   }

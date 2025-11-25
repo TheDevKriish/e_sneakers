@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path/path.dart' as path;
-import '../config/constants.dart';
+// import '../config/constants.dart';
 
 class ImageHelper {
   static final ImagePicker _picker = ImagePicker();
@@ -147,41 +147,43 @@ class ImageHelper {
   }
 
   // Validate and compress image
-  static Future<File?> validateAndCompressImage(
-    File file, {
-    BuildContext? context,
-  }) async {
-    // Check if valid image
-    if (!isValidImage(file)) {
-      if (context != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please select a valid image file (jpg, png, webp)'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      return null;
+  // Around line 165-175 - Add mounted check
+static Future<File?> validateAndCompressImage(
+  File file, {
+  BuildContext? context,
+}) async {
+  // Check if valid image
+  if (!isValidImage(file)) {
+    if (context != null && context.mounted) {  // ADD context.mounted check
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a valid image file (jpg, png, webp)'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
-
-    // Check file size
-    final isValidSize = await isValidFileSize(file);
-    if (!isValidSize) {
-      if (context != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Image size must be less than 5MB'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      return null;
-    }
-
-    // Compress image
-    final compressedFile = await compressImage(file, quality: AppConstants.imageQuality);
-    return compressedFile;
+    return null;
   }
+
+  // Check file size
+  final isValidSize = await isValidFileSize(file);
+  if (!isValidSize) {
+    if (context != null && context.mounted) {  // ADD context.mounted check
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Image size must be less than 5MB'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+    return null;
+  }
+
+  // Compress image
+  final compressedFile = await compressImage(file, quality: 80);
+  return compressedFile;
+}
+
 
   // Get image file info
   static Future<Map<String, dynamic>> getImageInfo(File file) async {

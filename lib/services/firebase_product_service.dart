@@ -4,7 +4,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/product_model.dart';
-import '../config/constants.dart';
+// import '../config/constants.dart';
 
 class FirebaseProductService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;

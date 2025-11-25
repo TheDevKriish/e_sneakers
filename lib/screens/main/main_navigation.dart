@@ -1,4 +1,3 @@
-// Main navigation screen
 // FILE: lib/screens/main/main_navigation.dart
 // PURPOSE: Bottom navigation with 4 main tabs
 

@@ -1,92 +1,81 @@
-// Cart management service
 // FILE: lib/services/cart_service.dart
-// PURPOSE: Cart management with Firestore
+// PURPOSE: Cart operations with Firestore
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/cart_item_model.dart';
-import '../models/product_model.dart';
 import 'firebase_auth_service.dart';
 
 class CartService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuthService _authService = FirebaseAuthService();
 
-  // Get user's cart
-  Future<List<CartItem>> getCart() async {
+  // Get cart items for current user
+  Future<List<CartItem>> getCartItems() async {
     try {
       final userId = _authService.getCurrentUserId();
       if (userId == null) return [];
 
-      QuerySnapshot snapshot = await _firestore
+      final snapshot = await _firestore
           .collection('users')
           .doc(userId)
           .collection('cart')
-          .orderBy('addedAt', descending: true)
           .get();
 
-      return snapshot.docs.map((doc) => CartItem.fromFirestore(doc)).toList();
+      return snapshot.docs
+          .map((doc) => CartItem.fromFirestore(doc))
+          .toList();
     } catch (e) {
       throw Exception('Failed to load cart: $e');
     }
   }
 
-  // Add product to cart
-  Future<void> addToCart(Product product, {int quantity = 1}) async {
+  // Add item to cart
+  Future<CartItem> addToCart({
+    required String productId,
+    required String name,
+    required String brand,
+    required double price,
+    required String imageUrl,
+    required int size,
+  }) async {
     try {
       final userId = _authService.getCurrentUserId();
-      if (userId == null) throw Exception('Please login to add items to cart');
+      if (userId == null) throw Exception('User not logged in');
 
-      final cartRef = _firestore
+      final docRef = await _firestore
           .collection('users')
           .doc(userId)
-          .collection('cart');
+          .collection('cart')
+          .add({
+        'productId': productId,
+        'name': name,
+        'brand': brand,
+        'price': price,
+        'imageUrl': imageUrl,
+        'size': size,
+        'quantity': 1,
+        'addedAt': FieldValue.serverTimestamp(),
+      });
 
-      // Check if product already in cart
-      QuerySnapshot existing = await cartRef
-          .where('productId', isEqualTo: product.id)
-          .get();
-
-      if (existing.docs.isNotEmpty) {
-        // Update quantity
-        final doc = existing.docs.first;
-        final currentQty = (doc.data() as Map<String, dynamic>)['quantity'] ?? 1;
-        await doc.reference.update({'quantity': currentQty + quantity});
-      } else {
-        // Add new item
-        final cartItem = CartItem(
-          cartItemId: '',
-          productId: product.id,
-          name: product.name,
-          brand: product.brand,
-          price: product.price,
-          imageUrl: product.imageUrl,
-          quantity: quantity,
-          addedAt: DateTime.now(),
-        );
-
-        await cartRef.add(cartItem.toMap());
-      }
+      final doc = await docRef.get();
+      return CartItem.fromFirestore(doc);
     } catch (e) {
       throw Exception('Failed to add to cart: $e');
     }
   }
 
-  // Update cart item quantity
+  // Update quantity
   Future<void> updateQuantity(String cartItemId, int quantity) async {
     try {
       final userId = _authService.getCurrentUserId();
-      if (userId == null) return;
+      if (userId == null) throw Exception('User not logged in');
 
-      if (quantity <= 0) {
-        await removeFromCart(cartItemId);
-      } else {
-        await _firestore
-            .collection('users')
-            .doc(userId)
-            .collection('cart')
-            .doc(cartItemId)
-            .update({'quantity': quantity});
-      }
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('cart')
+          .doc(cartItemId)
+          .update({'quantity': quantity});
     } catch (e) {
       throw Exception('Failed to update quantity: $e');
     }
@@ -96,7 +85,7 @@ class CartService {
   Future<void> removeFromCart(String cartItemId) async {
     try {
       final userId = _authService.getCurrentUserId();
-      if (userId == null) return;
+      if (userId == null) throw Exception('User not logged in');
 
       await _firestore
           .collection('users')
@@ -105,16 +94,17 @@ class CartService {
           .doc(cartItemId)
           .delete();
     } catch (e) {
-      throw Exception('Failed to remove item: $e');
+      throw Exception('Failed to remove from cart: $e');
     }
   }
 
-  // Clear entire cart
+  // Clear cart
   Future<void> clearCart() async {
     try {
       final userId = _authService.getCurrentUserId();
-      if (userId == null) return;
+      if (userId == null) throw Exception('User not logged in');
 
+      final batch = _firestore.batch();
       final snapshot = await _firestore
           .collection('users')
           .doc(userId)
@@ -122,37 +112,12 @@ class CartService {
           .get();
 
       for (var doc in snapshot.docs) {
-        await doc.reference.delete();
+        batch.delete(doc.reference);
       }
+
+      await batch.commit();
     } catch (e) {
       throw Exception('Failed to clear cart: $e');
-    }
-  }
-
-  // Calculate cart total
-  double calculateTotal(List<CartItem> cartItems) {
-    return cartItems.fold(0.0, (sum, item) => sum + item.subtotal);
-  }
-
-  // Get cart item count
-  Future<int> getCartCount() async {
-    try {
-      final userId = _authService.getCurrentUserId();
-      if (userId == null) return 0;
-
-      final snapshot = await _firestore
-          .collection('users')
-          .doc(userId)
-          .collection('cart')
-          .get();
-
-      return snapshot.docs.fold<int>(0, (int sum, doc) {
-        final data = doc.data();
-        final quantity = (data['quantity'] ?? 1) as int;
-        return sum + quantity;
-      });
-    } catch (e) {
-      return 0;
     }
   }
 }

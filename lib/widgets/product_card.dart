@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 import '../models/product_model.dart';
 import '../providers/favorites_provider.dart';
 import '../screens/product/product_detail_screen.dart';
-import '../config/constants.dart';
+// import '../config/constants.dart';
 
 class ProductCard extends StatelessWidget {
   final Product product;
@@ -96,7 +96,7 @@ class ProductCard extends StatelessWidget {
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
+                                  color: Colors.black.withValues(alpha: 0.6),
                                   blurRadius: 4,
                                 ),
                               ],
