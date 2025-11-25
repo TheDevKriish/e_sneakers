@@ -1,12 +1,12 @@
 // Products provider
 // FILE: lib/providers/products_provider.dart
-// PURPOSE: Products state management with Provider
+// PURPOSE: Products state management with Provider (WEB + MOBILE COMPATIBLE)
 
 import 'package:flutter/material.dart';
 import '../models/product_model.dart';
 import '../services/firebase_product_service.dart';
 import '../services/firebase_storage_service.dart';
-import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 class ProductsProvider with ChangeNotifier {
   final FirebaseProductService _productService = FirebaseProductService();
@@ -101,14 +101,14 @@ class ProductsProvider with ChangeNotifier {
     _filteredProducts = filtered;
   }
 
-  // Add product (Admin only) - IMAGE IS NOW OPTIONAL
+  // Add product (Admin only) - IMAGE IS OPTIONAL - WEB COMPATIBLE
   Future<bool> addProduct({
     required String name,
     required String brand,
     required double price,
     double? originalPrice,
     required String category,
-    File? imageFile, // Made optional
+    XFile? imageFile, // Changed from File? to XFile? for web compatibility
     required String description,
     required int stock,
   }) async {
@@ -136,9 +136,9 @@ class ProductsProvider with ChangeNotifier {
 
       String imageUrl = '';
       
-      // Upload image only if provided
+      // Upload image only if provided - USE XFile method for web compatibility
       if (imageFile != null) {
-        imageUrl = await _storageService.uploadProductImage(imageFile, productId);
+        imageUrl = await _storageService.uploadProductImageFromXFile(imageFile, productId);
       }
 
       // Update product with image URL (or keep empty if no image)
@@ -159,7 +159,7 @@ class ProductsProvider with ChangeNotifier {
     }
   }
 
-  // Update product (Admin only)
+  // Update product (Admin only) - WEB COMPATIBLE
   Future<bool> updateProduct({
     required String productId,
     required String name,
@@ -167,7 +167,7 @@ class ProductsProvider with ChangeNotifier {
     required double price,
     double? originalPrice,
     required String category,
-    File? imageFile,
+    XFile? imageFile, // Changed from File? to XFile?
     required String description,
     required int stock,
     String? existingImageUrl,
@@ -179,13 +179,13 @@ class ProductsProvider with ChangeNotifier {
     try {
       String imageUrl = existingImageUrl ?? '';
 
-      // Upload new image if provided
+      // Upload new image if provided - USE XFile method
       if (imageFile != null) {
         // Delete old image if exists
         if (existingImageUrl != null && existingImageUrl.isNotEmpty) {
           await _storageService.deleteProductImage(existingImageUrl);
         }
-        imageUrl = await _storageService.uploadProductImage(imageFile, productId);
+        imageUrl = await _storageService.uploadProductImageFromXFile(imageFile, productId);
       }
 
       // Update product
