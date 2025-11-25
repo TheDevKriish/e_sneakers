@@ -1,185 +1,254 @@
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:io';
 
 class ProductRepository {
   static final ProductRepository _instance = ProductRepository._internal();
   factory ProductRepository() => _instance;
   ProductRepository._internal();
 
-  List<Map<String, dynamic>> _products = [];
-  List<Map<String, dynamic>> _cart = [];
-  List<Map<String, dynamic>> _favorites = [];
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  Future<void> loadData() async {
+  Future<List<Map<String, dynamic>>> getProducts() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      
-      final productsData = prefs.getString('products');
-      if (productsData != null && productsData.isNotEmpty) {
-        _products = List<Map<String, dynamic>>.from(jsonDecode(productsData));
+      QuerySnapshot snapshot = await _firestore.collection('products').get();
+      return snapshot.docs.map((doc) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        data['id'] = doc.id;
+        return data;
+      }).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>> addProduct(Map<String, dynamic> product) async {
+    try {
+      DocumentReference docRef = await _firestore.collection('products').add({
+        'name': product['name'] ?? '',
+        'brand': product['brand'] ?? '',
+        'price': product['price'] ?? 0,
+        'originalPrice': product['originalPrice'],
+        'category': product['category'] ?? 'Sneakers',
+        'image': product['image'] ?? '',
+        'rating': product['rating'] ?? 4.0,
+        'reviews': product['reviews'] ?? 0,
+        'description': product['description'] ?? '',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      return {'success': true, 'productId': docRef.id};
+    } catch (e) {
+      return {'success': false, 'message': '$e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> updateProduct(String productId, Map<String, dynamic> updates) async {
+    try {
+      await _firestore.collection('products').doc(productId).update(updates);
+      return {'success': true};
+    } catch (e) {
+      return {'success': false, 'message': '$e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> deleteProduct(String productId) async {
+    try {
+      await _firestore.collection('products').doc(productId).delete();
+      return {'success': true};
+    } catch (e) {
+      return {'success': false, 'message': '$e'};
+    }
+  }
+
+  Future<String?> uploadProductImage(File imageFile) async {
+    try {
+      String fileName = DateTime.now().millisecondsSinceEpoch.toString();
+      Reference ref = _storage.ref().child('products/$fileName.jpg');
+      await ref.putFile(imageFile);
+      return await ref.getDownloadURL();
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getCart() async {
+    try {
+      String? userId = _auth.currentUser?.uid;
+      if (userId == null) return [];
+      QuerySnapshot snapshot = await _firestore.collection('users').doc(userId).collection('cart').get();
+      return snapshot.docs.map((doc) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        data['cartItemId'] = doc.id;
+        return data;
+      }).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>> addToCart(Map<String, dynamic> product) async {
+    try {
+      String? userId = _auth.currentUser?.uid;
+      if (userId == null) return {'success': false, 'message': 'Please login'};
+      String productId = product['id'].toString();
+      QuerySnapshot existing = await _firestore.collection('users').doc(userId).collection('cart').where('productId', isEqualTo: productId).get();
+      if (existing.docs.isNotEmpty) {
+        Map<String, dynamic> data = existing.docs.first.data() as Map<String, dynamic>;
+        await existing.docs.first.reference.update({'quantity': (data['quantity'] ?? 1) + 1});
       } else {
-        _products = _getDefaultProducts();
-        await saveProducts();
+        await _firestore.collection('users').doc(userId).collection('cart').add({
+          'productId': productId,
+          'name': product['name'],
+          'brand': product['brand'],
+          'price': product['price'],
+          'image': product['image'] ?? '',
+          'quantity': 1,
+          'addedAt': FieldValue.serverTimestamp(),
+        });
       }
-
-      final cartData = prefs.getString('cart');
-      if (cartData != null && cartData.isNotEmpty) {
-        _cart = List<Map<String, dynamic>>.from(jsonDecode(cartData));
-      }
-
-      final favoritesData = prefs.getString('favorites');
-      if (favoritesData != null && favoritesData.isNotEmpty) {
-        _favorites = List<Map<String, dynamic>>.from(jsonDecode(favoritesData));
-      }
-    } catch (_) {
-      _products = _getDefaultProducts();
-      _cart = [];
-      _favorites = [];
+      return {'success': true};
+    } catch (e) {
+      return {'success': false, 'message': '$e'};
     }
   }
 
-  List<Map<String, dynamic>> _getDefaultProducts() {
-    return [
-      {
-        'id': 1,
-        'name': 'Air Max 270',
-        'brand': 'Nike',
-        'price': 159,
-        'originalPrice': 189,
-        'category': 'Running',
-        'image': 'assets/sample1.png',
-        'rating': 4.5,
-        'reviews': 128,
-        'description': 'Premium Nike Air Max with superior comfort and style.',
-      },
-      {
-        'id': 2,
-        'name': 'Classic Black',
-        'brand': 'Adidas',
-        'price': 129,
-        'originalPrice': 149,
-        'category': 'Casual',
-        'image': 'assets/sample2.png',
-        'rating': 4.2,
-        'reviews': 95,
-        'description': 'Classic black sneakers perfect for everyday wear.',
-      },
-      {
-        'id': 3,
-        'name': 'Canvas White',
-        'brand': 'Converse',
-        'price': 89,
-        'originalPrice': 110,
-        'category': 'Sneakers',
-        'image': 'assets/sample1.png',
-        'rating': 4.0,
-        'reviews': 67,
-        'description': 'Timeless white canvas sneakers with vintage appeal.',
-      },
-    ];
-  }
-
-  List<Map<String, dynamic>> getProducts() => List.from(_products);
-  List<Map<String, dynamic>> getCart() => List.from(_cart);
-  List<Map<String, dynamic>> getFavorites() => List.from(_favorites);
-
-  Future<void> addProduct(Map<String, dynamic> product) async {
-    final complete = {
-      'id': DateTime.now().millisecondsSinceEpoch,
-      'name': product['name']?.toString() ?? 'Unknown Product',
-      'brand': product['brand']?.toString() ?? 'Unknown Brand',
-      'price': _toInt(product['price'], 0),
-      'originalPrice': product['originalPrice'] != null ? _toInt(product['originalPrice'], null) : null,
-      'category': product['category']?.toString() ?? 'Sneakers',
-      'image': product['image']?.toString() ?? 'assets/sample1.png',
-      'rating': _toDouble(product['rating'], 4.0),
-      'reviews': _toInt(product['reviews'], 0),
-      'description': product['description']?.toString() ?? 'No description available.',
-    };
-    _products.add(complete);
-    await saveProducts();
-  }
-
-  Future<void> addToCart(Map<String, dynamic> product) async {
-    final id = _toInt(product['id'], 0);
-    final existing = _cart.indexWhere((e) => _toInt(e['id'], -1) == id);
-    if (existing >= 0) {
-      _cart[existing]['quantity'] = _toInt(_cart[existing]['quantity'], 0) + 1;
-    } else {
-      final item = Map<String, dynamic>.from(product);
-      item['quantity'] = 1;
-      item['size'] = 8;
-      item['color'] = 'Black';
-      _cart.add(item);
-    }
-    await saveCart();
-  }
-
-  Future<void> updateCartQuantity(int productId, int qty) async {
-    final i = _cart.indexWhere((e) => _toInt(e['id'], -1) == productId);
-    if (i >= 0) {
-      if (qty > 0) {
-        _cart[i]['quantity'] = qty;
+  Future<void> updateCartQuantity(String cartItemId, int quantity) async {
+    try {
+      String? userId = _auth.currentUser?.uid;
+      if (userId == null) return;
+      if (quantity <= 0) {
+        await removeFromCart(cartItemId);
       } else {
-        _cart.removeAt(i);
+        await _firestore.collection('users').doc(userId).collection('cart').doc(cartItemId).update({'quantity': quantity});
       }
-      await saveCart();
-    }
+    } catch (e) {}
+  }
+
+  Future<void> removeFromCart(String cartItemId) async {
+    try {
+      String? userId = _auth.currentUser?.uid;
+      if (userId == null) return;
+      await _firestore.collection('users').doc(userId).collection('cart').doc(cartItemId).delete();
+    } catch (e) {}
   }
 
   Future<void> clearCart() async {
-    _cart.clear();
-    await saveCart();
+    try {
+      String? userId = _auth.currentUser?.uid;
+      if (userId == null) return;
+      QuerySnapshot snapshot = await _firestore.collection('users').doc(userId).collection('cart').get();
+      for (var doc in snapshot.docs) {
+        await doc.reference.delete();
+      }
+    } catch (e) {}
   }
 
-  Future<void> removeFromCart(int productId) async {
-    _cart.removeWhere((e) => _toInt(e['id'], -1) == productId);
-    await saveCart();
-  }
-
-  Future<void> addToFavorites(Map<String, dynamic> product) async {
-    final id = _toInt(product['id'], 0);
-    if (!_favorites.any((e) => _toInt(e['id'], -1) == id)) {
-      _favorites.add(product);
-      await saveFavorites();
+  Future<List<Map<String, dynamic>>> getFavorites() async {
+    try {
+      String? userId = _auth.currentUser?.uid;
+      if (userId == null) return [];
+      QuerySnapshot snapshot = await _firestore.collection('users').doc(userId).collection('favorites').get();
+      return snapshot.docs.map((doc) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        data['favoriteId'] = doc.id;
+        return data;
+      }).toList();
+    } catch (e) {
+      return [];
     }
   }
 
-  Future<void> removeFromFavorites(int productId) async {
-    _favorites.removeWhere((e) => _toInt(e['id'], -1) == productId);
-    await saveFavorites();
+  Future<bool> isFavorite(String productId) async {
+    try {
+      String? userId = _auth.currentUser?.uid;
+      if (userId == null) return false;
+      QuerySnapshot snapshot = await _firestore.collection('users').doc(userId).collection('favorites').where('productId', isEqualTo: productId).get();
+      return snapshot.docs.isNotEmpty;
+    } catch (e) {
+      return false;
+    }
   }
 
-  bool isFavorite(int productId) => _favorites.any((e) => _toInt(e['id'], -1) == productId);
-
-  Future<void> saveProducts() async {
-    final p = await SharedPreferences.getInstance();
-    await p.setString('products', jsonEncode(_products));
+  Future<void> addToFavorites(Map<String, dynamic> product) async {
+    try {
+      String? userId = _auth.currentUser?.uid;
+      if (userId == null) return;
+      String productId = product['id'].toString();
+      if (await isFavorite(productId)) return;
+      await _firestore.collection('users').doc(userId).collection('favorites').add({
+        'productId': productId,
+        'name': product['name'],
+        'brand': product['brand'],
+        'price': product['price'],
+        'image': product['image'] ?? '',
+        'addedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {}
   }
 
-  Future<void> saveCart() async {
-    final p = await SharedPreferences.getInstance();
-    await p.setString('cart', jsonEncode(_cart));
+  Future<void> removeFromFavorites(String productId) async {
+    try {
+      String? userId = _auth.currentUser?.uid;
+      if (userId == null) return;
+      QuerySnapshot snapshot = await _firestore.collection('users').doc(userId).collection('favorites').where('productId', isEqualTo: productId).get();
+      for (var doc in snapshot.docs) {
+        await doc.reference.delete();
+      }
+    } catch (e) {}
   }
 
-  Future<void> saveFavorites() async {
-    final p = await SharedPreferences.getInstance();
-    await p.setString('favorites', jsonEncode(_favorites));
+  Future<Map<String, dynamic>> placeOrder(List<Map<String, dynamic>> cartItems, double totalAmount) async {
+    try {
+      String? userId = _auth.currentUser?.uid;
+      if (userId == null) return {'success': false, 'message': 'Please login'};
+      DocumentReference orderRef = await _firestore.collection('orders').add({
+        'userId': userId,
+        'items': cartItems,
+        'totalAmount': totalAmount,
+        'status': 'pending',
+        'orderDate': FieldValue.serverTimestamp(),
+      });
+      await clearCart();
+      return {'success': true, 'orderId': orderRef.id};
+    } catch (e) {
+      return {'success': false, 'message': '$e'};
+    }
   }
 
-  int _toInt(dynamic v, int? d) {
-    if (v == null) return d ?? 0;
-    if (v is int) return v;
-    if (v is double) return v.toInt();
-    if (v is String) return int.tryParse(v) ?? (d ?? 0);
-    return d ?? 0;
+  Future<List<Map<String, dynamic>>> getOrders() async {
+    try {
+      String? userId = _auth.currentUser?.uid;
+      if (userId == null) return [];
+      QuerySnapshot snapshot = await _firestore.collection('orders').where('userId', isEqualTo: userId).get();
+      return snapshot.docs.map((doc) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        data['orderId'] = doc.id;
+        return data;
+      }).toList();
+    } catch (e) {
+      return [];
+    }
   }
 
-  double _toDouble(dynamic v, double d) {
-    if (v == null) return d;
-    if (v is double) return v;
-    if (v is int) return v.toDouble();
-    if (v is String) return double.tryParse(v) ?? d;
-    return d;
+  Future<List<Map<String, dynamic>>> getAllOrders() async {
+    try {
+      QuerySnapshot snapshot = await _firestore.collection('orders').get();
+      return snapshot.docs.map((doc) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        data['orderId'] = doc.id;
+        return data;
+      }).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<void> updateOrderStatus(String orderId, String status) async {
+    try {
+      await _firestore.collection('orders').doc(orderId).update({'status': status});
+    } catch (e) {}
   }
 }

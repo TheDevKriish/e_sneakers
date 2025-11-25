@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-import 'auth_service.dart';
-import 'main_navigation.dart';
-import 'admin_dashboard.dart';
-import 'loginscreen.dart';
+import 'LoginScreen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -10,70 +7,66 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
+
   @override
   void initState() {
     super.initState();
-    _navigate();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
+    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(CurvedAnimation(parent: _controller, curve: Curves.elasticOut));
+    _controller.forward();
+    _navigateToLogin();
   }
 
-  Future<void> _navigate() async {
-    await Future.delayed(const Duration(seconds: 2));
-    final user = await AuthService.getCurrentUser();
+  void _navigateToLogin() async {
+    await Future.delayed(const Duration(seconds: 3));
     if (!mounted) return;
-    
-    if (user != null) {
-      if (user['isAdmin'] == true) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const AdminDashboard()),
-        );
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const MainNavigation()),
-        );
-      }
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
-    }
+    Navigator.pushReplacement(context, PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => const LoginScreen(),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(opacity: animation, child: child);
+      },
+      transitionDuration: const Duration(milliseconds: 500),
+    ));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: Colors.black,
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.directions_run, size: 80, color: Colors.black),
-            SizedBox(height: 20),
-            Text(
-              'StepUp',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.white.withOpacity(0.3), blurRadius: 30, spreadRadius: 10)]),
+                  child: const Icon(Icons.directions_run, color: Colors.black, size: 60),
+                ),
+                const SizedBox(height: 30),
+                const Text('StepUp', style: TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.bold, letterSpacing: 2)),
+                const SizedBox(height: 10),
+                const Text('Step into Style', style: TextStyle(color: Colors.white70, fontSize: 16, letterSpacing: 1)),
+                const SizedBox(height: 50),
+                const SizedBox(width: 30, height: 30, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
+              ],
             ),
-            SizedBox(height: 8),
-            Text(
-              'Sneaker Store',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.black54,
-              ),
-            ),
-            SizedBox(height: 40),
-            CircularProgressIndicator(
-              color: Colors.black,
-              strokeWidth: 2,
-            ),
-          ],
+          ),
         ),
       ),
     );
