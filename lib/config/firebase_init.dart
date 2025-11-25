@@ -1,20 +1,20 @@
 // FILE: lib/config/firebase_init.dart
-// PURPOSE: Firebase initialization with error handling
+// PURPOSE: Firebase initialization logic
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'firebase_options.dart';
 
 class FirebaseInitializer {
   static Future<void> initialize() async {
     try {
-      await Firebase.initializeApp();
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
       debugPrint('✅ Firebase initialized successfully');
-    } on FirebaseException catch (e) {
-      debugPrint('❌ Firebase error: ${e.message}');
-      throw Exception('Firebase initialization failed: ${e.message}');
     } catch (e) {
-      debugPrint('❌ Unexpected error: $e');
-      throw Exception('Failed to initialize: $e');
+      debugPrint('❌ Firebase initialization error: $e');
+      rethrow;
     }
   }
 
@@ -22,7 +22,7 @@ class FirebaseInitializer {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        backgroundColor: const Color(0xFFF8F9FA),
+        backgroundColor: Colors.white,
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
@@ -36,9 +36,9 @@ class FirebaseInitializer {
                 ),
                 const SizedBox(height: 24),
                 const Text(
-                  'Firebase Setup Required',
+                  'Firebase Initialization Failed',
                   style: TextStyle(
-                    fontSize: 22,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                   ),
                   textAlign: TextAlign.center,
@@ -46,37 +46,27 @@ class FirebaseInitializer {
                 const SizedBox(height: 16),
                 Text(
                   error,
-                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[700],
+                  ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.amber.shade200),
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: () {
+                    // Restart app logic
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 16,
+                    ),
                   ),
-                  child: const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Setup Instructions:',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        '1. Download google-services.json from Firebase Console\n'
-                        '2. Place it in: android/app/\n'
-                        '3. Download GoogleService-Info.plist\n'
-                        '4. Place it in: ios/Runner/\n'
-                        '5. Restart the app',
-                        style: TextStyle(fontSize: 13),
-                      ),
-                    ],
+                  child: const Text(
+                    'Retry',
+                    style: TextStyle(color: Colors.white),
                   ),
                 ),
               ],
