@@ -1,6 +1,6 @@
 // Edit product screen
 // FILE: lib/screens/admin/edit_product_screen.dart
-// PURPOSE: Edit existing product
+// PURPOSE: Edit existing product (WEB + MOBILE COMPATIBLE)
 
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -13,6 +13,7 @@ import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../utils/validators.dart';
 import '../../services/firebase_storage_service.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class EditProductScreen extends StatefulWidget {
   const EditProductScreen({super.key});
@@ -33,7 +34,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
   final _storageService = FirebaseStorageService();
 
   Product? _product;
-  File? _newImage;
+  XFile? _newImageXFile; // Changed from File? to XFile?
   final _imagePicker = ImagePicker();
 
   @override
@@ -80,20 +81,19 @@ class _EditProductScreenState extends State<EditProductScreen> {
       );
 
       if (pickedFile != null) {
-        final file = File(pickedFile.path);
-
-        if (!_storageService.isValidImage(file)) {
+        // Validate using XFile methods
+        if (!_storageService.isValidImageXFile(pickedFile)) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Please select a valid image file'),
+              content: Text('Please select a valid image (JPG, JPEG, or PNG format)'),
               backgroundColor: Colors.red,
             ),
           );
           return;
         }
 
-        if (!await _storageService.isValidFileSize(file)) {
+        if (!await _storageService.isValidFileSizeXFile(pickedFile)) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -105,7 +105,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
         }
 
         setState(() {
-          _newImage = file;
+          _newImageXFile = pickedFile;
         });
       }
     } catch (e) {
@@ -134,7 +134,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
           ? double.parse(_originalPriceController.text.trim())
           : null,
       category: _categoryController.text.trim(),
-      imageFile: _newImage,
+      imageFile: _newImageXFile, // Pass XFile
       description: _descriptionController.text.trim(),
       stock: int.parse(_stockController.text.trim()),
       existingImageUrl: _product!.imageUrl,
@@ -190,12 +190,18 @@ class _EditProductScreenState extends State<EditProductScreen> {
                           // Display image
                           ClipRRect(
                             borderRadius: BorderRadius.circular(12),
-                            child: _newImage != null
-                                ? Image.file(
-                                    _newImage!,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                  )
+                            child: _newImageXFile != null
+                                ? (kIsWeb
+                                    ? Image.network(
+                                        _newImageXFile!.path,
+                                        width: double.infinity,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : Image.file(
+                                        File(_newImageXFile!.path),
+                                        width: double.infinity,
+                                        fit: BoxFit.cover,
+                                      ))
                                 : CachedNetworkImage(
                                     imageUrl: _product!.imageUrl,
                                     width: double.infinity,
