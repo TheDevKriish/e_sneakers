@@ -78,7 +78,7 @@ class ProductsProvider with ChangeNotifier {
     _applyFilters();
     notifyListeners();
   }
-
+  
   // Apply search and category filters
   void _applyFilters() {
     List<Product> filtered = List.from(_products);
@@ -108,7 +108,7 @@ class ProductsProvider with ChangeNotifier {
     required double price,
     double? originalPrice,
     required String category,
-    XFile? imageFile, // Changed from File? to XFile? for web compatibility
+    XFile? imageFile,
     required String description,
     required int stock,
   }) async {
@@ -117,6 +117,10 @@ class ProductsProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      debugPrint('[ProductsProvider] Starting product addition...');
+      debugPrint('[ProductsProvider] Product name: $name');
+      debugPrint('[ProductsProvider] Has image: ${imageFile != null}');
+      
       // Create product with temporary ID and empty imageUrl
       final tempProduct = Product(
         id: 'temp',
@@ -132,26 +136,42 @@ class ProductsProvider with ChangeNotifier {
       );
 
       // Add to Firestore first
+      debugPrint('[ProductsProvider] Adding product to Firestore...');
       final productId = await _productService.addProduct(tempProduct);
+      debugPrint('[ProductsProvider] Product added with ID: $productId');
 
       String imageUrl = '';
       
       // Upload image only if provided - USE XFile method for web compatibility
       if (imageFile != null) {
-        imageUrl = await _storageService.uploadProductImageFromXFile(imageFile, productId);
+        debugPrint('[ProductsProvider] Uploading image...');
+        try {
+          imageUrl = await _storageService.uploadProductImageFromXFile(imageFile, productId);
+          debugPrint('[ProductsProvider] Image uploaded successfully: $imageUrl');
+        } catch (imageError) {
+          debugPrint('[ProductsProvider] Image upload failed: $imageError');
+          // Continue without image - don't fail the whole product creation
+          _errorMessage = 'Product added but image upload failed: $imageError';
+        }
+      } else {
+        debugPrint('[ProductsProvider] No image provided, skipping upload');
       }
 
       // Update product with image URL (or keep empty if no image)
+      debugPrint('[ProductsProvider] Updating product with image URL...');
       final finalProduct = tempProduct.copyWith(id: productId, imageUrl: imageUrl);
       await _productService.updateProduct(finalProduct);
+      debugPrint('[ProductsProvider] Product updated successfully');
 
       // Reload products
       await loadProducts();
 
       _isLoading = false;
       notifyListeners();
+      debugPrint('[ProductsProvider] Product addition complete!');
       return true;
     } catch (e) {
+      debugPrint('[ProductsProvider] ERROR: Failed to add product: $e');
       _errorMessage = 'Failed to add product: $e';
       _isLoading = false;
       notifyListeners();
@@ -167,7 +187,7 @@ class ProductsProvider with ChangeNotifier {
     required double price,
     double? originalPrice,
     required String category,
-    XFile? imageFile, // Changed from File? to XFile?
+    XFile? imageFile,
     required String description,
     required int stock,
     String? existingImageUrl,
@@ -177,18 +197,32 @@ class ProductsProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      debugPrint('[ProductsProvider] Starting product update...');
+      debugPrint('[ProductsProvider] Product ID: $productId');
+      debugPrint('[ProductsProvider] Has new image: ${imageFile != null}');
+      
       String imageUrl = existingImageUrl ?? '';
 
       // Upload new image if provided - USE XFile method
       if (imageFile != null) {
-        // Delete old image if exists
-        if (existingImageUrl != null && existingImageUrl.isNotEmpty) {
-          await _storageService.deleteProductImage(existingImageUrl);
+        debugPrint('[ProductsProvider] Uploading new image...');
+        try {
+          // Delete old image if exists
+          if (existingImageUrl != null && existingImageUrl.isNotEmpty) {
+            debugPrint('[ProductsProvider] Deleting old image...');
+            await _storageService.deleteProductImage(existingImageUrl);
+          }
+          imageUrl = await _storageService.uploadProductImageFromXFile(imageFile, productId);
+          debugPrint('[ProductsProvider] New image uploaded: $imageUrl');
+        } catch (imageError) {
+          debugPrint('[ProductsProvider] Image update failed: $imageError');
+          // Keep existing image URL if upload fails
+          _errorMessage = 'Product updated but image upload failed: $imageError';
         }
-        imageUrl = await _storageService.uploadProductImageFromXFile(imageFile, productId);
       }
 
       // Update product
+      debugPrint('[ProductsProvider] Updating product in Firestore...');
       final updatedProduct = Product(
         id: productId,
         name: name,
@@ -203,14 +237,17 @@ class ProductsProvider with ChangeNotifier {
       );
 
       await _productService.updateProduct(updatedProduct);
+      debugPrint('[ProductsProvider] Product updated in Firestore');
 
       // Reload products
       await loadProducts();
 
       _isLoading = false;
       notifyListeners();
+      debugPrint('[ProductsProvider] Product update complete!');
       return true;
     } catch (e) {
+      debugPrint('[ProductsProvider] ERROR: Failed to update product: $e');
       _errorMessage = 'Failed to update product: $e';
       _isLoading = false;
       notifyListeners();
