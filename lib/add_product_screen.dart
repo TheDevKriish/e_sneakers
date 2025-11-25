@@ -92,7 +92,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
                 _label('Category'),
                 DropdownButtonFormField<String>(
-                  value: selectedCategory,
+                  initialValue: selectedCategory,
                   items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
                   onChanged: (v) => setState(() => selectedCategory = v!),
                   decoration: _dec(),

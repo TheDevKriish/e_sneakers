@@ -151,7 +151,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 SizedBox(
                   width: 150,
                   child: DropdownButtonFormField<String>(
-                    value: _category,
+                    initialValue: _category,
                     items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
                     onChanged: (v) {
                       if (v == null) return;
