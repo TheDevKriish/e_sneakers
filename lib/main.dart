@@ -1,34 +1,49 @@
-import 'package:flutter/material.dart';
-import 'splash_screen.dart';
+// Main entry point for E-commerce Flutter app
+// FILE: lib/main.dart
+// PURPOSE: App entry point with Firebase initialization and theme
 
-void main() {
-  runApp(const StepUpApp());
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
+import 'config/firebase_init.dart';
+import 'config/routes.dart';
+import 'theme/app_theme.dart';
+import 'providers/auth_provider.dart';
+import 'providers/products_provider.dart';
+import 'providers/cart_provider.dart';
+import 'providers/favorites_provider.dart' as favorites_provider;
+import 'screens/auth/splash_screen.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  try {
+    await FirebaseInitializer.initialize();
+    runApp(const MyApp());
+  } catch (e) {
+    runApp(FirebaseInitializer.buildErrorScreen(e.toString()));
+  }
 }
 
-class StepUpApp extends StatelessWidget {
-  const StepUpApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'StepUp',
-      theme: ThemeData(
-        fontFamily: 'Inter',
-        primaryColor: Colors.black,
-        scaffoldBackgroundColor: const Color(0xFFF8F9FA),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFFF8F9FA),
-          elevation: 0,
-          iconTheme: IconThemeData(color: Colors.black),
-          titleTextStyle: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-          ),
-        ),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => ProductsProvider()),
+        ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProvider(create: (_) => favorites_provider.FavoritesProvider()),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'StepUp Sneakers',
+        theme: AppTheme.lightTheme,
+        home: const SplashScreen(),
+        routes: AppRoutes.routes,
       ),
-      home: const SplashScreen(),
     );
   }
 }

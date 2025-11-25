@@ -1,5 +1,5 @@
-name: esnaker
-description: StepUp Sneaker E-commerce App
+name: e_sneakers
+description: Complete E-commerce Flutter App with Firebase
 
 publish_to: 'none'
 version: 1.0.0+1
@@ -10,16 +10,35 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  
+  # UI
   cupertino_icons: ^1.0.8
-  http: ^1.2.0
-  shared_preferences: ^2.2.2
-  image_picker: ^1.0.4
-
+  
+  # Firebase
+  firebase_core: ^2.24.2
+  firebase_auth: ^4.15.3
+  cloud_firestore: ^4.13.6
+  firebase_storage: ^11.5.6
+  
+  # State Management
+  provider: ^6.1.1
+  
+  # Image Handling
+  image_picker: ^1.0.7
+  cached_network_image: ^3.3.1
+  flutter_image_compress: ^2.1.0
+  
+  # Utilities
+  intl: ^0.19.0
+  uuid: ^4.3.3
+  
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_lints: ^3.0.1
 
 flutter:
   uses-material-design: true
   assets:
-    - assets/
+    - assets/images/
+    # - assets/icons/
