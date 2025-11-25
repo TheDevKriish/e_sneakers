@@ -73,10 +73,26 @@ class FirebaseStorageService {
     return await file.length();
   }
 
-  // Validate image file
+  // Validate image file - FIXED VERSION
   bool isValidImage(File file) {
-    final extension = path.extension(file.path).toLowerCase();
-    return ['.jpg', '.jpeg', '.png', '.webp'].contains(extension);
+    final filePath = file.path.toLowerCase();
+    
+    // Debug: Print the file path to see what we're getting
+    print('Validating image path: $filePath');
+    
+    // Check if file path ends with valid extensions
+    if (filePath.endsWith('.jpg') ||
+        filePath.endsWith('.jpeg') ||
+        filePath.endsWith('.png') ||
+        filePath.endsWith('.webp')) {
+      return true;
+    }
+    
+    // Also check using path.extension as backup
+    final ext = path.extension(filePath).toLowerCase();
+    print('Extension detected: $ext');
+    
+    return ['.jpg', '.jpeg', '.png', '.webp'].contains(ext);
   }
 
   // Check file size
@@ -85,3 +101,4 @@ class FirebaseStorageService {
     return size <= AppConstants.maxImageSize;
   }
 }
+
