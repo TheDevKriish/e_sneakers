@@ -34,7 +34,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
   final _storageService = FirebaseStorageService();
 
   Product? _product;
-  XFile? _newImageXFile; // Changed from File? to XFile?
+  XFile? _newImageXFile; // Use XFile for web compatibility
   final _imagePicker = ImagePicker();
 
   @override
@@ -134,7 +134,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
           ? double.parse(_originalPriceController.text.trim())
           : null,
       category: _categoryController.text.trim(),
-      imageFile: _newImageXFile, // Pass XFile
+      imageFile: _newImageXFile, // Pass XFile (can be null)
       description: _descriptionController.text.trim(),
       stock: int.parse(_stockController.text.trim()),
       existingImageUrl: _product!.imageUrl,
@@ -221,7 +221,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.6),
+                                color: Colors.black.withOpacity(0.6),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Row(
